@@ -19,13 +19,32 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 # SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-import sys, os
+import sys, os, getopt
 
-testname = sys.argv[1]
+def print_help ():
+    print "Usage: run [-dh] <testname>"
+    print "  -d : instruction decode"
+    print "  -h : option help (this list)"
+    sys.exit(0)
+
+# parse command line options
+# d : instruction trace
+# h : help
+(options, args) = getopt.getopt (sys.argv[1:], "dh")
+if len(args) == 0:
+    print_help()
+testname = args[0]
 simulator = "cver"
 
 filelist = " -f env/tb.vf"
 testdef  = " +incdir+env -l logs/%s.log +define+DUMPFILE_NAME=\\\"logs/%s.dump\\\" +define+ROM_FILE=\\\"tests/%s.vmem\\\" +define+RAM_FILE=\\\"tests/%s.vmem\\\"" % (testname, testname, testname+"_rom", testname+"_ram")
+
+for option in options:
+    if option[0] == "-d":
+        print "Adding TV80_INSTRUCTION_DECODE"
+        testdef += " +define+TV80_INSTRUCTION_DECODE=1"
+    if option[0] == "-h":
+        print_help()
 
 os.chdir ("tests")
 os.system ("make %s.vmem" % testname)
