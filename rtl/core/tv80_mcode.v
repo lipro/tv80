@@ -84,6 +84,7 @@ module tv80_mcode (/*AUTOARG*/
   output		I_CCF			;
   output		I_SCF			;
   output		I_RETN			;
+  output		I_RETI;
   output		I_BT			;
   output		I_BC			;
   output		I_BTR			;
@@ -132,6 +133,7 @@ module tv80_mcode (/*AUTOARG*/
   reg                   I_CCF			;
   reg                   I_SCF			;
   reg                   I_RETN			;
+  reg                   I_RETI;
   reg                   I_BT			;
   reg                   I_BC			;
   reg                   I_BTR			;
@@ -247,6 +249,7 @@ module tv80_mcode (/*AUTOARG*/
       I_CPL = 1'b0;
       I_CCF = 1'b0;
       I_SCF = 1'b0;
+      I_RETI = 1'b0;
       I_RETN = 1'b0;
       I_BT = 1'b0;
       I_BC = 1'b0;
@@ -813,7 +816,7 @@ module tv80_mcode (/*AUTOARG*/
                           begin
 			    Jump = 1'b1;
 			    IncDec_16 = 4'b0111;
-			    I_RETN = 1'b1;
+			    I_RETI = 1'b1;
 			    SetEI = 1'b1;
                           end
 			default :;
@@ -2529,7 +2532,8 @@ module tv80_mcode (/*AUTOARG*/
                           begin
 			    Jump = 1'b1;
 			    IncDec_16 = 4'b0111;
-			    I_RETN = 1'b1;
+                            I_RETN = ~IR[3];
+                            I_RETI = IR[3];
                           end
                         
 			default :;
@@ -2611,11 +2615,11 @@ module tv80_mcode (/*AUTOARG*/
                           begin
 			    if (IR[3] == 1'b0 ) 
                               begin
-				IncDec_16 = 4'b0010;
+				IncDec_16 = 4'b0110;
 			      end 
                             else 
                               begin
-				IncDec_16 = 4'b1010;
+				IncDec_16 = 4'b1110;
 			      end
 			    TStates = 3'b100;
 			    Write = 1'b1;
@@ -2658,11 +2662,11 @@ module tv80_mcode (/*AUTOARG*/
                           begin
 			    if (IR[3] == 1'b0 ) 
                               begin
-				IncDec_16 = 4'b0010;
+				IncDec_16 = 4'b0110;
 			      end 
                             else 
                               begin
-				IncDec_16 = 4'b1010;
+				IncDec_16 = 4'b1110;
 			      end
 			    IORQ = 1'b1;
 			    Write = 1'b1;
@@ -2751,7 +2755,7 @@ module tv80_mcode (/*AUTOARG*/
     end // always @ (IR, ISet, MCycle, F, NMICycle, IntCycle)
   
 // synopsys dc_script_begin
-// set_attribute current_design "revision" "$Id: tv80_mcode.v,v 1.1 2004-05-16 17:39:57 ghutchis Exp $" -type string -quiet
+// set_attribute current_design "revision" "$Id: tv80_mcode.v,v 1.1.4.1 2004-08-31 05:48:57 ghutchis Exp $" -type string -quiet
 // synopsys dc_script_end
 endmodule // T80_MCode
 

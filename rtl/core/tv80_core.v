@@ -57,6 +57,7 @@ module tv80_core (/*AUTOARG*/
   output    rfsh_n;		
   output    halt_n;		
   output    busak_n;		
+  output    reti_n;
   output [15:0] A; 
   input [7:0]   dinst;	
   input [7:0]   di;	
@@ -79,6 +80,7 @@ module tv80_core (/*AUTOARG*/
   reg	intcycle_n;	
   reg	IntE;		
   reg	stop;		
+  reg   reti_n;
 
   parameter     aNone	 = 3'b111;
   parameter     aBC	 = 3'b000;
@@ -194,6 +196,7 @@ module tv80_core (/*AUTOARG*/
   wire           I_CCF;
   wire           I_SCF;
   wire           I_RETN;
+  wire           I_RETI;
   wire           I_BT;
   wire           I_BC;
   wire           I_BTR;
@@ -253,6 +256,7 @@ module tv80_core (/*AUTOARG*/
      .I_CCF                (I_CCF),
      .I_SCF                (I_SCF),
      .I_RETN               (I_RETN),
+     .I_RETI               (I_RETI),
      .I_BT                 (I_BT),
      .I_BC                 (I_BC),
      .I_BTR                (I_BTR),
@@ -1119,6 +1123,7 @@ module tv80_core (/*AUTOARG*/
 	  Auto_Wait_t1 <= #1 1'b0;
 	  Auto_Wait_t2 <= #1 1'b0;
 	  m1_n <= #1 1'b1;
+	  reti_n <= #1 1'b1;
 	end 
       else
         begin
@@ -1132,10 +1137,11 @@ module tv80_core (/*AUTOARG*/
                 begin
 		  Auto_Wait_t1 <= #1 Auto_Wait || iorq_i;
 		end
-	      Auto_Wait_t2 <= #1 Auto_Wait_t1;
+	      Auto_Wait_t2 <= #1 Auto_Wait_t1 && !T_Res;
 	      No_BTR <= #1 (I_BT && (~ IR[4] || ~ F[Flag_P])) ||
 			(I_BC && (~ IR[4] || F[Flag_Z] || ~ F[Flag_P])) ||
 			(I_BTR && (~ IR[4] || F[Flag_Z]));
+	      reti_n <= #1 ~I_RETI;
 	      if (tstate == 2 ) 
                 begin
 		  if (SetEI == 1'b1 ) 
@@ -1298,7 +1304,7 @@ module tv80_core (/*AUTOARG*/
     end // always @ *
   
 // synopsys dc_script_begin
-// set_attribute current_design "revision" "$Id: tv80_core.v,v 1.1 2004-05-16 17:39:57 ghutchis Exp $" -type string -quiet
+// set_attribute current_design "revision" "$Id: tv80_core.v,v 1.1.4.1 2004-08-31 05:48:57 ghutchis Exp $" -type string -quiet
 // synopsys dc_script_end
 endmodule // T80
 
