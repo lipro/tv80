@@ -25,9 +25,11 @@ sfr at 0x94 randval;
 void print (char *string)
 {
   char *iter;
+  char timeout;
 
+  timeout = timeout_port;
   timeout_port = 0x02;
-  timeout_port = 0x01;
+  timeout_port = timeout;
 
   iter = string;
   while (*iter != 0) {
@@ -40,9 +42,11 @@ void print_num (int num)
   int cd = 0;
   int i;
   char digits[8];
+  char timeout;
 
+  timeout = timeout_port;
   timeout_port = 0x02;
-  timeout_port = 0x01;
+  timeout_port = timeout;
 
   while (num > 0) {
     digits[cd++] = (num % 10) + '0';
