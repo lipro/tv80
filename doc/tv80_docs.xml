@@ -1,14 +1,16 @@
 <?xml version="1.0"?>
 <!DOCTYPE rfc SYSTEM "rfc2629.dtd">
 <?rfc toc="yes"?>
-<?rfc private="$Rev$"?>
+<?rfc private="$Revision: 1.2 $"?>
 <?rfc compact="yes"?>
 <rfc>
 <front>
 <title>tv80 Core Documentation</title>
 <author initials="G." surname="Hutchison" fullname="Guy Hutchison">
 <organization>OpenCores.org</organization>
+<address>
 <email>ghutchis@opencores.org</email>
+</address>
 </author>
 <date month="October" year="2004" />
 <area>General</area>
@@ -21,6 +23,16 @@ with the Z80, targetted at embedded and system-on-a-chip designs.
 </t></abstract>
 </front>
 <middle>
+    <section title="Background">
+        <t>The tv80 core was created as a Verilog port of the <xref target="t80">VHDL T80 core</xref>, for use as a maintenence processor inside an ASIC.
+            The tv80 has been modified since then for better synthesis
+            timing/area results, and to incorporate several bug-fixes.</t>
+        <t>The T80, and the tv80 derived from it, attempt to maintain the
+            original cycle timings of the Z80, but have radically different
+            internal designs and timings.  With its target being ASIC and
+            embedded applications, the tv80 does not attempt to maintain
+            the original pinout of the Z80.</t>
+    </section>
 <section title="Verification Environment">
  <section title="Memory Map">
 <t>
@@ -53,14 +65,12 @@ which are mapped into I/O space.
 
   <section title="Simulation control (0x80)">
 
-<figure>
-<artwork>
-        Write '01' to end simulation with test passed
-        Write '02' to end with test failed
-        Write '03' to turn on dumping
-        Write '04' to turn off dumping
-</artwork>
-</figure>
+    <list style="symbols">
+     <t>   Write '01' to end simulation with test passed</t>
+     <t>   Write '02' to end with test failed</t>
+     <t>   Write '03' to turn on dumping</t>
+     <t>   Write '04' to turn off dumping</t>
+    </list>
   </section>
 
   <section title="Message output (0x81)">
@@ -71,16 +81,13 @@ which are mapped into I/O space.
 </t>
   </section>
   <section title="Timeout control (0x82)">
-
-<figure>
-<artwork>
-        Bit[0] enables the timeout counter
-        Bit[1] resets the counter to 0
-        Timeout counter defaults to enabled at simulation start
-</artwork>
-</figure>
-
+    <t>
+        Bit[0] enables the timeout counter,
+        Bit[1] resets the counter to 0.
+        Timeout counter defaults to enabled at simulation start.
+    </t>
   </section>
+
   <section title="Max timeout (0x84, 0x83)">
    <t>
         Holds 16-bit timeout value (amount of time in clocks before
@@ -95,8 +102,37 @@ which are mapped into I/O space.
   </section>
 
  </section>
+ <section title="Tests">
+   <t>Most of the tests in the tv80 environment are written in C, and should
+       be compiled with the <xref target="sdcc">sdcc</xref> compiler.  
+   </t>
+     <section title="tvs80 test">
+      <t>The tvs80 test is different than the rest of the tests, and is 
+         written in its own flavor of assembly language.  This test provides
+         a fairly comprehensive Z80 instruction test.</t>
+      <t>The assembler for this test only runs under DOS.  To assemble
+         under Unix/Linux, the "dosbox" DOS emulator is required.  A script
+         to run the assembler under dosbox, as well as the tvs80.asm source,
+         is checked in under the "tests/tvs80" directory.</t>
+     </section>
+ </section>
 </section>
 </middle>
 <back>
+    <references>
+        <reference anchor="t80" target="http://www.opencores.org/projects.cgi/web/t80/overview">
+            <front>
+                <title>VHDL T80 Core</title>
+                <author initials="D." surname="Wallner" fullname="Daniel Wallner">
+                    <organization>OpenCores.org</organization>
+                </author>
+            </front>
+        </reference>
+        <reference anchor="sdcc" target="http://sdcc.sourceforge.net">
+            <front>
+                <title>Small Device C Compiler</title>
+            </front>
+        </reference>
+    </references>
 </back>
 </rfc>
