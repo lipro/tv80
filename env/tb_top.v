@@ -94,7 +94,8 @@ module tb_top;
       int_n  = 1;
       nmi_n  = 1;
       busrq_n = 1;
-      $readmemh (`PROGRAM_FILE,  tb_top.rom.mem);
+      $readmemh (`ROM_FILE,  tb_top.rom.mem);
+      $readmemh (`RAM_FILE,  tb_top.ram.mem);
       repeat (20) @(negedge clk);
       reset_n = 1;
     end
