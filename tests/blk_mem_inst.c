@@ -38,11 +38,10 @@ test_ldi_loop:
     ldi 
     ld  a, #0x00
     cp  c
-    jp  z, test_ldi_loop_exit
+    jp  nz, test_ldi_loop
     cp  b
     jp  nz, test_ldi_loop
 
-    test_ldi_loop_exit:
   _endasm;
 
   rv = 1;
@@ -63,7 +62,6 @@ char test_ldir () {
     ld  de, #_bufb
     ld  hl, #_bufa
     ld  bc, #128
-    dec bc
 
     ldir 
 
@@ -96,11 +94,10 @@ test_ldd_loop:
     ldd
     ld  a, #0x00
     cp  c
-    jp  z, test_ldd_loop_exit
+    jp  nz, test_ldd_loop
     cp  b
     jp  nz, test_ldd_loop
 
-    test_ldd_loop_exit:
   _endasm;
 
   rv = 1;
@@ -124,6 +121,7 @@ char test_lddr () {
     ex  de, hl
     ld  hl, #_bufa
     add hl, bc
+    inc bc
 
     lddr
 
