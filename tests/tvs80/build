@@ -1,0 +1,4 @@
+dosbox
+mv TVS80TST.HEX ../tvs80.ihx
+(pushd ../..; scripts/s80_convert.py)
+
