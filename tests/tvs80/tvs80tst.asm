@@ -99,7 +99,7 @@ print_port:	equ	#81
 passed		macro
                 ld      a, 1
                 out     (ctl_port), a
-                hlt
+                halt
 		;push	bc
 		;ld 	bc,(pass)
 		;ld	(message_addr),bc
@@ -485,8 +485,7 @@ ld_48:		ld	e,(iy+2)
 ld_49:		cp	data_7f
 		jr	z,ld_50
 		fail_msg 49
-ld_50:		nop
-                print	"ld_50"
+ld_50:
                 ld	h,(iy+0)
 		ld	a,(iy+0)
 		cp	h
@@ -726,8 +725,7 @@ ld_99:		ld	iy,t_var2
 		cp	data_80+17
 		jr	z,ld_100
 		fail_msg 99
-ld_100:		nop
-                print	"ld_100"
+ld_100:
                 ld	(iy+1),data_80-17
 		ld	a,(iy+1)
 		cp	data_80-17
@@ -989,7 +987,6 @@ ld_149:		ld	iy,(w_var1)
 		fail_msg 149
 ld_150:		
                 ld      sp, stack_end ; reset stack pointer to EOM
-                print	"ld_150"
                 ld	a,#34      ;bjp was >data_1234
 		cp	l
 		jr	z,ld_151
@@ -1361,7 +1358,7 @@ ex_31:		ld	a,#34      ;bjp was >data_1234
 		cp	l
 		jr	z,add_0
 		fail_msg 31
-add_0:		nop
+add_0:		ld	sp,stack_end ; reset stack after EX operations
 		print   "add_0"
 		ld	a,0
 		ld	b,data_7f
@@ -2993,7 +2990,9 @@ cp_59:		cp	a,(iy-1)
 		fail_msg 59
 cp_60:		jr	nc,inc_0
 		fail_msg 60
-inc_0:		ld	a,data_7f
+inc_0:		nop
+		print "inc"
+		ld	a,data_7f
 		cp	a,data_7f
 		jr	z,inc_1
 		fail_msg 0
@@ -3195,7 +3194,9 @@ inc_53:		ld	a,(iy-1)
 		cp	a,data_80+1
 		jr	z,dec_0
 		fail_msg 53
-dec_0:		ld	a,data_80
+dec_0:		nop
+		print "dec"
+		ld	a,data_80
 		cp	a,data_80
 		jr	z,dec_1
 		fail_msg 0
@@ -3401,7 +3402,9 @@ cpl_2:		cpl
 		cp	a,data_aa
 		jr	z,neg_0
 		fail_msg 2
-neg_0:		ld	a,data_80
+neg_0:		nop
+		print "neg"
+		ld	a,data_80
 		cp	a,data_80
 		jp	po,neg_1
 		fail_msg 0
@@ -3433,7 +3436,9 @@ neg_9:		neg
 neg_10:		cp	a,data_55
 		jr	z,ccf_0
 		fail_msg 10
-ccf_0:		scf
+ccf_0:		nop
+		print "ccf/im"
+		scf
 		jr	c,ccf_1
 		fail_msg 0
 ccf_1:		ccf
@@ -3445,7 +3450,9 @@ ccf_2:		ccf
 im_0:		im	0
 		im	1
 		im	2
-daa_0:		ld	a,#99
+daa_0:		nop
+		print "daa"
+		ld	a,#99
 		ld	b,#1
 		add	a,b
 		daa
@@ -3484,7 +3491,9 @@ daa_8:		add	a,b
 daa_9:		cp	a,3
 		jr	z,add_74
 		fail_msg 9
-add_74:		ld	hl,data_1234
+add_74:		nop
+		print "add"
+		ld	hl,data_1234
 		add	hl,hl
 		jr	nc,add_75
 		fail_msg 74
@@ -3607,6 +3616,7 @@ add_108:	ld	a,l
 		jr	z,sbc_66
 		fail_msg 108
 sbc_66:		ld	sp,stack_end
+		print	"sbc"
 		scf
 		ccf
 		ld	hl,data_1234
@@ -3652,6 +3662,7 @@ sbc_80:		ld	a,l
 		jr	z,add_109
 		fail_msg 80
 add_109:	ld	sp,stack_end
+		print	"add"
 		ld	ix,0
 		add	ix,sp
 		jr	nc,add_110
@@ -3767,7 +3778,9 @@ add_130:	ld	a,c
 		cp	a,#68		;<(data_1234+data_1234)
 		jr	z,inc_54
 		fail_msg 130
-inc_54:		ld	bc,data_1234
+inc_54:		ld	sp,stack_end
+		print "inc"
+		ld	bc,data_1234
 		inc	bc
 		ld	a,b
 		cp	a,#12      ;bjp was >data_1234
@@ -3797,7 +3810,13 @@ inc_59:		ld	a,l
 		cp	a,#00		;<data_7fff+1
 		jr	z,inc_60
 		fail_msg 59
-inc_60:		ld	hl,0
+	;; this test doesn't make any sense to me.  it looks
+	;; like it increments SP, and then looks for *both*
+	;; SPhigh and SPlow to have been incremented by 1.  The
+	;; only way this works is if SP started as stack_end + 100
+	;; added new statement accordingly. (gth)
+inc_60:		ld	sp,stack_end+#100 ; added new initial val (gth)
+		ld	hl,0
 		inc	sp
 		add	hl,sp
 		ld	sp,stack_end
@@ -3833,7 +3852,9 @@ inc_65:		ld	a,c
 		cp	a,#00		;<data_7fff+1
 		jr	z,dec_46
 		fail_msg 65
-dec_46:		ld	bc,data_1234
+dec_46:		nop
+		print	"dec"
+		ld	bc,data_1234
 		dec	bc
 		ld	a,b
 		cp	a,#12      ;bjp was >data_1234
@@ -3863,7 +3884,10 @@ dec_51:		ld	a,l
 		cp	a,#54		;<data_aa55-1
 		jr	z,dec_52
 		fail_msg 51
-dec_52:		ld	hl,0
+	;; similar mysterious test to inc_60, expecting both halves
+	;; of SP to be decremented.  Fix by setting sp stack_end-100 (gth)
+dec_52:		ld	sp, stack_end-#100 ; new starting SP (gth)
+		ld	hl,0
 		dec	sp
 		add	hl,sp
 		ld	a,h
@@ -3899,7 +3923,9 @@ dec_57:		ld	a,e
 		cp	a,#54		;<data_aa55-1
 		jr	z,rlca_0
 		fail_msg 57
-rlca_0:		ld	a,data_80
+rlca_0:		nop
+		print	"rlca/rla"
+		ld	a,data_80
 		rlca
 		jr	c,rlca_1
 		fail_msg 0
@@ -3914,7 +3940,8 @@ rlca_3:		ld	a,data_55
 		cp	a,data_aa
 		jr	z,rla_0
 		fail_msg 3
-rla_0:		scf
+rla_0:
+		scf
 		ccf
 		ld	a,data_80
 		rla
@@ -3931,7 +3958,9 @@ rla_3:		ld	a,data_7f
 		cp	a,data_ff-1
 		jr	z,rrca_0
 		fail_msg 3
-rrca_0:		scf
+rrca_0:		nop
+		print "rrca/rra"
+		scf
 		ccf
 		ld	a,1
 		rrca
@@ -3965,7 +3994,9 @@ rra_3:		ld	a,data_aa
 		cp	a,data_55
 		jr	z,rlc_0
 		fail_msg 3
-rlc_0:		ld	a,data_80
+rlc_0:		nop
+		print	"rlc"
+		ld	a,data_80
 		rlc	a
 		jr	c,rlc_1
 		fail_msg 0
@@ -4150,7 +4181,9 @@ rlc_50:		ld	a,0
 		rlc	(iy+1)
 		jr	z,rl_0
 		fail_msg 50
-rl_0:		scf
+rl_0:		nop
+		print	"rl"
+		scf
 		ccf
 		ld	a,data_55
 		rl	a
@@ -4308,7 +4341,9 @@ rl_47:		ld	a,0
 		rl	(iy+1)
 		jr	z,rrc_0
 		fail_msg 47
-rrc_0:		ld	a,data_aa
+rrc_0:		nop
+		print	"rrc"
+		ld	a,data_aa
 		rrc	a
 		jp	p,rrc_1
 		fail_msg 0
@@ -4490,7 +4525,9 @@ rrc_52:		ld	a,0
 		rrc	(iy+1)
 		jr	z,rr_0
 		fail_msg 52
-rr_0:		scf
+rr_0:		nop
+		print	"rr"
+		scf
 		ccf
 		ld	a,data_aa
 		rr	a
@@ -4636,7 +4673,9 @@ rr_44:		ld	a,0
 		rr	(iy-1)
 		jr	z,sla_0
 		fail_msg 44
-sla_0:		ld	a,data_55
+sla_0:		nop
+		print	"sla"
+		ld	a,data_55
 		sla	a
 		jp	m,sla_1
 		fail_msg 0
@@ -4794,7 +4833,9 @@ sla_48:		ld	a,data_80
 		fail_msg 48
 sla_49:		jr	c,sra_0
 		fail_msg 49
-sra_0:		ld	a,data_55
+sra_0:		nop
+		print	"sra"
+		ld	a,data_55
 		sra	a
 		jp	p,sra_1
 		fail_msg 0
@@ -4987,7 +5028,9 @@ sra_55:		ld	a,1
 		fail_msg 55
 sra_56:		jr	z,srl_0
 		fail_msg 56
-srl_0:		ld	a,data_55
+srl_0:		nop
+		print	"srl"
+		ld	a,data_55
 		srl	a
 		jr	c,srl_1
 		fail_msg 0
@@ -5183,7 +5226,9 @@ srl_53:		srl	(iy+1)
 		fail_msg 53
 srl_54:		jr	c,rld_0
 		fail_msg 54
-rld_0:		ld	hl,t_var5
+rld_0:		nop
+		print	"rld/rrd"
+		ld	hl,t_var5
 		ld	a,data_55
 		ld	(hl),data_aa
 		rld
@@ -5262,7 +5307,9 @@ rrd_10:		ld	a,(hl)
 		cp	a,data_80
 		jr	z,bit_0
 		fail_msg 10
-bit_0:		ld	a,data_ff
+bit_0:		nop
+		print	"bit"
+		ld	a,data_ff
 		bit	0,a
 		jr	nz,bit_1
 		fail_msg 0
@@ -5434,7 +5481,9 @@ bit_50:		bit	6,(iy+2)
 bit_51:		bit	7,(iy+2)
 		jr	z,set_0
 		fail_msg 51
-set_0:		ld	a,0
+set_0:		nop
+		print	"set"
+		ld	a,0
 		set	0,a
 		set	2,a
 		set	4,a
@@ -5554,7 +5603,9 @@ set_13:		set	1,(iy+1)
 		cp	a,data_aa
 		jr	z,res_0
 		fail_msg 13
-res_0:		ld	a,data_ff
+res_0:		nop
+		print	"res"
+		ld	a,data_ff
 		res	7,a
 		cp	a,data_7f
 		jr	z,res_1
@@ -5688,7 +5739,9 @@ res_14:		res	0,(iy+1)
 		cp	a,data_aa
 		jr	z,jp_0
 		fail_msg 14
-jp_0:		jp	jp_1
+jp_0:		nop
+		print	"jp"
+		jp	jp_1
 		nop
 		nop
 		fail_msg 0
@@ -5734,7 +5787,9 @@ djnz_1:		inc	a
 		cp	a,5
 		jr	z,call_0
 		fail_msg 1
-call_0:		ld	a,0
+call_0:		nop
+		print	"call"
+		ld	a,0
 		call	sub1
 		cp	a,data_7f
 		jr	z,call_1
@@ -5787,7 +5842,10 @@ call_8:		ld	a,data_7f
 		cp	a,data_7f
 		jr	z,rst_0
 		fail_msg 8
-rst_0:		rst	#00
+rst_0:		ld	a, 1
+		ld	(rst_state),a
+		print	"rst"
+		rst	#00
 		cp	a,1
 		jr	z,rst_1
 		fail_msg 0
@@ -5817,8 +5875,11 @@ rst_6:		rst	#30
 		fail_msg 6
 rst_7:		rst	#38
 		cp	a,8
-		jr	z,in_0
+		jp	z,ldi_ops
 		fail_msg 7
+
+	;; skip the in instructions, as they need to be reworked
+	;; for TV80 environment. (gth)
 in_0:		in	a,(in_port)
 		cp	a,data_7f
 		jr	z,in_1
@@ -5985,6 +6046,9 @@ in_40:		dec	hl
 		cp	a,data_aa
 		jr	z,ldi_0
 		fail_msg 40
+
+ldi_ops:	nop
+		print	"ldi"
 ldi_0:		ld	hl,t_var1
 		ld	a,#12      ;bjp was >data_1234
 		ld	(hl),a
@@ -6253,8 +6317,12 @@ cpdr_8:		ld	a,#34      ;bjp was >data_1234
 		fail_msg 8
 cpdr_9:		jr	nz,cpdr_10
 		fail_msg 9
-cpdr_10:	jp	m,out_0
+cpdr_10:	jp	m,test_exit
 		fail_msg 10
+
+	;; this section needs to be reworked for the TV80 environment.
+	;; Since env uses ports for all its test control, this gets
+	;; partially covered by normal operation. (gth)
 ;
 ;the file portfe.xxx must be examined to see if the proper output is generated
 ;
@@ -6308,31 +6376,12 @@ otdr_1:		out	(c),c
 		out	(c),a
 		ld	a,#0a
 		out	(c),a
-inc_pass:	ld	a,(pass_count)
-		inc	a
-		ld	(pass_count),a
-		ld	hl,error_cnt
-		ld	a,(hl)
-		cp	a,0
-		jr	z,worked
-		failed
-		cp	a,0
-		jr	nz,stop
-;worked:		passed           ;???? bjp
-worked:		push	bc
-		ld 	bc,(pass)
-		ld	(message_addr),bc
-		ld 	bc,(pass+2)
-		ld	(message_addr+2),bc
-		ld 	bc,(pass+4)
-		ld	(message_addr+4),bc
-		pop	bc
 
-
-stop:		halt
-		nop
-		nop
-		nop
+test_exit:	
+	;; complicated pass/fail computation no longer necessary
+	;; if we got here, we passed
+	passed
+		
 ;
 ;subroutine 1, must load a with #7f
 ;
@@ -6385,6 +6434,10 @@ sub9:		rl	a
 ;restart 0 routine
 ;
 rst_0000_1:
+		ld	a, (rst_state)
+		cp	1
+		jp	z,rst_test_ret
+	
 		ld	a, 3
 		out	(ctl_port), a	; enable dumping
 		ld	a, 0
@@ -6395,6 +6448,8 @@ rst_0000_1:
 		jp	nz,start
 		ld	a,1
 		ret
+
+rst_test_ret:	ret
 ;
 ;		data
 ;
@@ -6430,6 +6485,7 @@ tw_var7:	dw	0
 error_cnt:	db	0
 pass_count:	db	1
 fail_num        db      0
+rst_state	db	0
 ;
 		org	#8100
 stack:		ds	128
