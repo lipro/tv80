@@ -5,6 +5,8 @@ module env_io (/*AUTOARG*/
   // Inputs
   clk, iorq_n, rd_n, wr_n, addr, DO
   );
+
+  parameter str_buf_sz = 256;
   
   input clk;
   input iorq_n;
@@ -16,7 +18,7 @@ module env_io (/*AUTOARG*/
 
   reg [7:0]    io_data;
 
-  reg [7:0]    str_buf [0:255];
+  reg [7:0]    str_buf [0:str_buf_sz-1];
   reg 	       io_cs;
   integer      buf_ptr, i;
 
@@ -64,6 +66,16 @@ module env_io (/*AUTOARG*/
 	    begin
 	      str_buf[buf_ptr] = DO;
 	      buf_ptr = buf_ptr + 1;
+
+	      if (buf_ptr == str_buf_sz)
+		begin
+		  $display ("%t: WARNING : String buffer reached maximum size without detecting EOL", $time);
+		  $write ("%t: WARNING : Contents: ", $time);
+		  for (i=0; i<buf_ptr; i=i+1)
+		    $write ("%s", str_buf[i]);
+		  $write ("\n");
+		  buf_ptr = 0;
+		end
 
 	      //$display ("%t: DEBUG   : Detected write of character %x", $time, DO);
 	      if (DO == 8'h0A)
