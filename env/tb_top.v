@@ -20,6 +20,7 @@ module tb_top;
   wire [7:0]  di;
   wire [7:0]  do;
   wire 	      ram_rd_cs, ram_wr_cs, rom_rd_cs;
+  reg         tx_clk;
   
   always
     begin
@@ -28,6 +29,14 @@ module tb_top;
       clk = 0;
       #5;
     end
+
+  always
+    begin
+      tx_clk = 0;
+      #8;
+      tx_clk = 1;
+      #8;
+    end      
 
   assign rom_rd_cs = !mreq_n & !rd_n & !A[15];
   assign ram_rd_cs = !mreq_n & !rd_n & A[15];
@@ -93,7 +102,6 @@ module tb_top;
   wire [7:0] rx_data, tx_data;
   wire       rx_clk, rx_dv, rx_er;
   wire       tx_dv, tx_er;
-  wire       tx_clk;
   wire [7:0] nw_data_out;
   
   // loopback config
