@@ -1,5 +1,4 @@
 `define TV80_CORE_PATH tb_top.tv80s_inst.i_tv80_core
-`define TV80_INSTRUCTION_TRACE 1
 
 module tb_top;
 
@@ -103,7 +102,7 @@ module tb_top;
       reset_n = 1;
     end
 
-`ifdef TV80_INSTRUCTION_TRACE
+`ifdef TV80_INSTRUCTION_DECODE
   reg [7:0] state;
   initial
     state = 0;
