@@ -32,7 +32,7 @@ module tv80_mcode
   ExchangeRS, I_DJNZ, I_CPL, I_CCF, I_SCF, I_RETN, I_BT, I_BC, I_BTR, 
   I_RLD, I_RRD, I_INRC, SetDI, SetEI, IMode, Halt, NoRead, Write, 
   // Inputs
-  IR, ISet, MCycle, F, NMICycle, IntCycle
+  IR, ISet, MCycle, F, tstate, NMICycle, IntCycle
   );
   
   parameter             Mode   = 0;
@@ -49,6 +49,7 @@ module tv80_mcode
   input [1:0]           ISet                    ;
   input [6:0]           MCycle                  ;
   input [7:0]           F                       ;
+  input [6:0]           tstate;
   input                 NMICycle                ;
   input                 IntCycle                ;
   output [2:0]          MCycles                 ;
@@ -170,6 +171,7 @@ module tv80_mcode
      // Inputs
      .IR                                (IR),
      .MCycle                            (MCycle),
+     .tstate                            (tstate),
      .F                                 (F),
      .NMICycle                          (NMICycle),
      .IntCycle                          (IntCycle));
@@ -314,6 +316,6 @@ module tv80_mcode
     end // always @ (IR, ISet, MCycle, F, NMICycle, IntCycle)
   
   // synopsys dc_script_begin
-  // set_attribute current_design "revision" "$Id: tv80_mcode.v,v 1.5.4.1 2004-11-30 21:58:09 ghutchis Exp $" -type string -quiet
+  // set_attribute current_design "revision" "$Id: tv80_mcode.v,v 1.5.4.2 2004-12-16 00:46:29 ghutchis Exp $" -type string -quiet
   // synopsys dc_script_end
 endmodule // T80_MCode

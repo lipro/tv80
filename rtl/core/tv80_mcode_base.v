@@ -27,7 +27,7 @@ module tv80_mcode_base
   // Outputs
   output_vector, 
   // Inputs
-  IR, MCycle, F, NMICycle, IntCycle
+  IR, MCycle, F, NMICycle, IntCycle, tstate
   );
   
   parameter             Mode   = 0;
@@ -47,6 +47,7 @@ module tv80_mcode_base
   input [7:0]           F                       ;
   input                 NMICycle                ;
   input                 IntCycle                ;
+  input [6:0]           tstate;
 
   // regs
   reg [2:0]             MCycles                 ;
@@ -149,7 +150,8 @@ module tv80_mcode_base
   reg [2:0] SSS;
   reg [1:0] DPAIR;
   
-  always @ (/*AUTOSENSE*/F or IR or IntCycle or MCycle or NMICycle)
+  always @ (/*AUTOSENSE*/F or IR or IntCycle or MCycle or NMICycle
+            or tstate)
     begin
       DDD = IR[5:3];
       SSS = IR[2:0];
@@ -657,7 +659,23 @@ module tv80_mcode_base
             if (Mode != 3 ) 
               begin
                 // EX DE,HL
-                ExchangeDH = 1'b1;
+
+                case (1'b1)
+                  tstate[3] :
+                    begin
+                      Set_BusA_To = 4'b0100;
+                      Set_BusB_To = 4'b0010;
+                      ExchangeDH = 1'b1;
+                    end
+
+                  tstate[4] :
+                    begin
+                      Set_BusA_To = 4'b0010;
+                      ExchangeDH = 1'b1;
+                    end
+
+                  default :;
+                endcase
               end
           end
         
@@ -1827,6 +1845,6 @@ module tv80_mcode_base
 
   
   // synopsys dc_script_begin
-  // set_attribute current_design "revision" "$Id: tv80_mcode_base.v,v 1.1.2.1 2004-11-30 21:58:10 ghutchis Exp $" -type string -quiet
+  // set_attribute current_design "revision" "$Id: tv80_mcode_base.v,v 1.1.2.2 2004-12-16 00:46:34 ghutchis Exp $" -type string -quiet
   // synopsys dc_script_end
 endmodule // T80_MCode

@@ -144,8 +144,8 @@ module tv80_core (/*AUTOARG*/
   reg           IncDecZ;
 
   // ALU signals
-  reg [7:0]     BusB;
-  reg [7:0]     BusA;
+  reg [7:0]     BusB, NextBusB;
+  reg [7:0]     BusA, NextBusA;
   wire [7:0]    ALU_Q;
   wire [7:0]    F_Out;
 
@@ -217,6 +217,7 @@ module tv80_core (/*AUTOARG*/
      .IR                   (IR),
      .ISet                 (ISet),
      .MCycle               (mcycle),
+     .tstate               (tstate),
      .F                    (F),
      .NMICycle             (NMICycle),
      .IntCycle             (IntCycle),
@@ -895,16 +896,16 @@ module tv80_core (/*AUTOARG*/
         RegAddrA = { Alternate, IncDec_16[1:0] };
       else if ((tstate[2] || (tstate[3] && mcycle[0] && IncDec_16[2] == 1'b1)) && IncDec_16[1:0] == 2'b10)
         RegAddrA = { XY_State[1], 2'b11 };
-      else if (ExchangeDH == 1'b1 && tstate[3])
+      else /* if (ExchangeDH == 1'b1 && tstate[3])
         RegAddrA = { Alternate, 2'b10 };
       else if (ExchangeDH == 1'b1 && tstate[4])
 	RegAddrA = { Alternate, 2'b01 };
-      else
+      else */
         RegAddrA = RegAddrA_r;
       
-      if (ExchangeDH == 1'b1 && tstate[3])
+      /* if (ExchangeDH == 1'b1 && tstate[3])
         RegAddrB = { Alternate, 2'b01 };
-      else
+      else */
         RegAddrB = RegAddrB_r;
     end // always @ *
   
@@ -954,7 +955,7 @@ module tv80_core (/*AUTOARG*/
       RegDIH = Save_Mux;
       RegDIL = Save_Mux;
 
-      if (ExchangeDH == 1'b1 && tstate[3] ) 
+      /*if (ExchangeDH == 1'b1 && tstate[3] ) 
         begin
 	  RegDIH = RegBusB[15:8];
 	  RegDIL = RegBusB[7:0];
@@ -964,7 +965,7 @@ module tv80_core (/*AUTOARG*/
 	  RegDIH = RegBusA_r[15:8];
 	  RegDIL = RegBusA_r[7:0];
 	end
-      else if (IncDec_16[2] == 1'b1 && ((tstate[2] && mcycle != 3'b001) || (tstate[3] && mcycle[0])) ) 
+      else */ if (IncDec_16[2] == 1'b1 && ((tstate[2] && mcycle != 3'b001) || (tstate[3] && mcycle[0])) ) 
         begin
 	  RegDIH = ID16[15:8];
 	  RegDIL = ID16[7:0];
@@ -996,69 +997,50 @@ module tv80_core (/*AUTOARG*/
   //
   //-------------------------------------------------------------------------
 
+  always @(/*AUTOSENSE*/ACC or DI_Reg or F or PC or RegBusA or RegBusB
+           or SP or Set_BusA_To or Set_BusB_To)
+    begin
+      case (Set_BusB_To)
+	4'b0111 : NextBusB = ACC;
+	4'b0000 , 
+        4'b0100 , 
+        4'b0010 : NextBusB = RegBusB[15:8];
+        4'b0001 , 
+        4'b0011 , 
+        4'b0101 : NextBusB = RegBusB[7:0];
+	4'b0110 : NextBusB = DI_Reg;
+	4'b1000 : NextBusB = SP[7:0];
+	4'b1001 : NextBusB = SP[15:8];
+	4'b1010 : NextBusB = 8'b00000001;
+	4'b1011 : NextBusB = F;
+	4'b1100 : NextBusB = PC[7:0];
+	4'b1101 : NextBusB = PC[15:8];
+	4'b1110 : NextBusB = 8'b00000000;
+	default : NextBusB = 8'hxx;            
+      endcase // case(Set_BusB_To)
+
+      case (Set_BusA_To)
+	4'b0111 : NextBusA = ACC;
+	4'b0000 , 
+        4'b0100 , 
+        4'b0010 : NextBusA = RegBusA[15:8];
+        4'b0001 , 
+        4'b0011 , 
+        4'b0101 : NextBusA = RegBusA[7:0];
+	4'b0110 : NextBusA = DI_Reg;
+	4'b1000 : NextBusA = SP[7:0];
+	4'b1001 : NextBusA = SP[15:8];
+	4'b1010 : NextBusA = 8'b00000000;
+	default : NextBusA =  8'hxx;
+      endcase      
+    end // always @ (...
+  
   always @ (posedge clk)
     begin
       if (ClkEn == 1'b1 ) 
         begin
-	  case (Set_BusB_To)
-	    4'b0111 :
-	      BusB <= #1 ACC;
-	    4'b0000 , 4'b0001 , 4'b0010 , 4'b0011 , 4'b0100 , 4'b0101 :
-              begin
-		if (Set_BusB_To[0] == 1'b1 ) 
-                  begin
-		    BusB <= #1 RegBusB[7:0];
-		  end 
-                else 
-                  begin
-		    BusB <= #1 RegBusB[15:8];
-		  end
-              end
-	    4'b0110 :
-	      BusB <= #1 DI_Reg;
-	    4'b1000 :
-	      BusB <= #1 SP[7:0];
-	    4'b1001 :
-	      BusB <= #1 SP[15:8];
-	    4'b1010 :
-	      BusB <= #1 8'b00000001;
-	    4'b1011 :
-	      BusB <= #1 F;
-	    4'b1100 :
-	      BusB <= #1 PC[7:0];
-	    4'b1101 :
-	      BusB <= #1 PC[15:8];
-	    4'b1110 :
-	      BusB <= #1 8'b00000000;
-	    default :
-	      BusB <= #1 8'hxx;
-	  endcase
-
-	  case (Set_BusA_To)
-	    4'b0111 :
-	      BusA <= #1 ACC;
-	    4'b0000 , 4'b0001 , 4'b0010 , 4'b0011 , 4'b0100 , 4'b0101 :
-              begin
-		if (Set_BusA_To[0] == 1'b1 )
-                  begin
-		    BusA <= #1 RegBusA[7:0];
-		  end 
-                else 
-                  begin
-		    BusA <= #1 RegBusA[15:8];
-		  end
-              end
-	    4'b0110 :
-	      BusA <= #1 DI_Reg;
-	    4'b1000 :
-	      BusA <= #1 SP[7:0];
-	    4'b1001 :
-	      BusA <= #1 SP[15:8];
-	    4'b1010 :
-	      BusA <= #1 8'b00000000;
-	    default :
-	      BusB <= #1  8'hxx;
-	  endcase
+          BusA <= #1 NextBusA;
+          BusB <= #1 NextBusB;
 	end
     end
 
@@ -1341,7 +1323,7 @@ module tv80_core (/*AUTOARG*/
     end // always @ *
   
 // synopsys dc_script_begin
-// set_attribute current_design "revision" "$Id: tv80_core.v,v 1.4 2004-10-05 08:09:43 ghutchis Exp $" -type string -quiet
+// set_attribute current_design "revision" "$Id: tv80_core.v,v 1.4.4.1 2004-12-16 00:46:19 ghutchis Exp $" -type string -quiet
 // synopsys dc_script_end
 endmodule // T80
 
