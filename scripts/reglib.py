@@ -74,6 +74,7 @@ class register_group:
         self.registers = []
         self.ports = [port ('input', 'clk'), port('input','reset')]
         self.nets  = []
+        self.interrupts = 0
         if (mem_mapped):
             self.req_pin = 'mreq_n'
         else:
@@ -88,15 +89,40 @@ class register_group:
         self.ports.append (port ('input','rd_n'))
         self.ports.append (port ('input', 'wr_n'))
         self.ports.append (port ('input', self.req_pin))
+        self.nets.append (net('reg','rd_data',self.data_size))
+        self.nets.append (net('reg','block_select'))
+        self.nets.append (net('reg','doe'))
+
+    # create a hook for post-processing to be done after all data has been
+    # added to the object.
+    def post (self):
+        self.int_ports()
+        
+    # create port for interrupt pin, as well as port for data output enable
+    # when interrupt is asserted.
+    # This block should be called after all register data has been read.
+    def int_ports (self):
+        self.ports.append (port ('output','int_n'))
+        self.nets.append (net ('reg','int_n'))
+
+    def int_logic (self):
+        statements = []
+        int_nets = []
+        for r in self.registers:
+            if r.interrupt: int_nets.append (r.name + "_int")
+        statements.append ("int_n = ~(" + string.join (int_nets, ' | ') + ");")
+        return comb_block (statements)
 
     def global_logic (self):
         # create select pin for this block
-        self.nets.append (net('reg','block_select'))
         statements = ["block_select = (addr[%d:%d] == %d) & !%s;" % (self.addr_size-1,self.local_width,self.base_addr >> self.local_width, self.req_pin)]
 
         # create read and write selects for each register
         for r in self.registers:
-            s = "%s_rd_sel = block_select & (addr[%d:%d] == %d) & !rd_n;" % (r.name,self.local_width-1,0,r.offset)
+            slogic =  "block_select & (addr[%d:%d] == %d) & !rd_n" % (self.local_width-1,0,r.offset)
+            if r.interrupt:
+                slogic = "%s_int | (%s)" % (r.name, slogic)
+            s = "%s_rd_sel = %s;" % (r.name,slogic)
             statements.append (s)
             if r.write_cap():
                 s = "%s_wr_sel = block_select & (addr[%d:%d] == %d) & !wr_n;" % (r.name,self.local_width-1,0,r.offset)
@@ -106,13 +132,27 @@ class register_group:
 
     def read_mux (self):
         s = ''
-        for r in self.registers:
-            s += "assign rd_data = (%s_rd_sel) ? %s : %d'bz;\n" % (r.name, r.name, self.data_size)
+        sments = []
+        rd_sel_list = []
+        # Old code for simple tri-state interface
+        #for r in self.registers:
+        #    s += "assign rd_data = (%s_rd_sel) ? %s : %d'bz;\n" % (r.name, r.name, self.data_size)
 
-        return s
+        sments.append ("case (1'b1)")
+        for r in self.registers:
+            sments.append ("  %s_rd_sel : rd_data = %s;" % (r.name, r.name))
+            rd_sel_list.append (r.name + "_rd_sel")
+        sments.append ("  default : rd_data = %d'bx;" % self.data_size)
+        sments.append ("endcase")
+
+        sments.append ("doe = %s;" % string.join (rd_sel_list, ' | '))
+
+        return comb_block (sments)
                 
         
     def verilog (self):
+        self.post()
+        
         result = 'module ' + self.name + ' (\n'
         result += string.join (map (lambda x: x.name, self.ports), ',')
         result += ');\n'
@@ -128,22 +168,36 @@ class register_group:
         # create global logic
         result += self.global_logic()
         result += self.read_mux()
+        if (self.interrupts > 0): result += self.int_logic()
         
         # print function blocks
         for r in self.registers:
             result += r.verilog_body()
             
-        result += 'endmodule;\n'
+        result += 'endmodule\n'
         return result
 
-    def add_register (self, name, type, width):
+    def add_register (self, type, params):
+    #def add_register (self, name, type, width):
         if (type == 'status'):
-            self.add (status_reg (name,width))
+            self.add (status_reg (params['name'],params['width']))
         elif (type == 'config'):
-            self.add (config_reg (name,width))
+            self.add (config_reg (params['name'],params['width'],params['default']))
+        elif (type == 'int_fixed'):
+            r2 = config_reg (params['name'] + "_msk",params['width'],params['default'])
+            r1 = int_fixed_reg (params['name'],r2,params['width'])
+            self.add (r1)
+            self.add (r2)
+            self.interrupts += 1
+        elif (type == 'soft_set'):
+            self.add (soft_set_reg(params['name'],params['width'],params['default']))
+        elif (type == 'read_stb'):
+            self.add (read_stb_reg (params['name'],params['width']))
+        elif (type == 'write_stb'):
+            self.add (config_reg (params['name'],params['width'],params['default']))
         else:
             print "Unknown register type",type
-            
+
     def add (self, reg):
         self.registers.append (reg)
         self.ports.extend (reg.io())
@@ -159,6 +213,7 @@ class basic_register:
         self.offset = 0
         self.width  = width
         self.name   = name
+        self.interrupt = 0
 
     def verilog_body (self):
         pass
@@ -172,36 +227,137 @@ class basic_register:
     def write_cap (self):
         return 0
 
+    def id_comment (self):
+        return "// register: %s\n" % self.name
+
 class status_reg (basic_register):
     def __init__ (self, name='', width=0):
         basic_register.__init__(self, name, width)
         
     def verilog_body (self):
-        pass
+        return ''
 
     def io (self):
-        return [('input',self.width, self.name)]
+        return [port('input', self.name, self.width)]
 
     def nets (self):
-        return [ net('reg', name + '_rd_sel')]
+        return [ net('reg', self.name + '_rd_sel')]
 
 class config_reg (basic_register):
-    def __init__ (self, name='', width=0):
+    def __init__ (self, name='', width=0, default=0):
         basic_register.__init__(self, name, width)
-        self.default = 0
+        self.default = default
         
     def verilog_body (self):
         statements = ["if (reset) %s <= %d;" % (self.name, self.default),
-                      "else if %s_wr_sel %s <= %s;" % (self.name, self.name, 'wr_data')
+                      "else if (%s_wr_sel) %s <= %s;" % (self.name, self.name, 'wr_data')
                       ]
-        return seq_block ('clk', statements)
+        return self.id_comment() + seq_block ('clk', statements)
 
     def io (self):
         return [ port('output',self.name, self.width) ]
 
     def nets (self):
-        return [ net('reg', self.name + '_rd_sel'), net('reg', self.name + '_wr_sel')]
+        return [ net('reg', self.name, self.width),
+                 net('reg', self.name + '_rd_sel'),
+                 net('reg', self.name + '_wr_sel')]
 
     def write_cap (self):
         return 1
-    
+
+class int_fixed_reg (basic_register):
+    def __init__ (self, name, mask_reg, width=0):
+        basic_register.__init__(self, name, width)
+        self.mask_reg = mask_reg
+        self.interrupt = 1
+        
+    def verilog_body (self):
+        statements = ["if (reset) %s <= %d;" % (self.name, 0),
+                      "else %s <= (%s_set | %s) & ~( {%d{%s}} & %s);" %
+                      (self.name, self.name, self.name, self.width, self.name + '_wr_sel', 'wr_data'),
+                      "if (reset) %s_int <= 0;" % self.name,
+                      "else %s_int <= |(%s & ~%s);" % (self.name, self.name, self.mask_reg.name)
+                      ]
+        return self.id_comment() + seq_block ('clk', statements)
+
+    def io (self):
+        return [ port('input',self.name+"_set", self.width) ]
+
+    def nets (self):
+        return [ net('reg', self.name + '_rd_sel'),
+                 net('reg', self.name, self.width),
+                 net('reg', self.name + '_wr_sel'),
+                 net('reg', self.name + '_int')]
+
+    def write_cap (self):
+        return 1
+
+class soft_set_reg (basic_register):
+    def __init__ (self, name='', width=0, default=0):
+        basic_register.__init__(self, name, width)
+        self.default = default
+        
+    def verilog_body (self):
+        statements = ["if (reset) %s <= %d;" % (self.name, self.default),
+                      "else %s <= ( ({%d{%s}} & %s) | %s) & ~(%s);" %
+                            (self.name, self.width, self.name+'_wr_sel', 'wr_data',
+                             self.name, self.name + '_clr')
+                      ]
+        return self.id_comment() + seq_block ('clk', statements)
+
+    def io (self):
+        return [ port('output',self.name, self.width),
+                 port ('input',self.name+"_clr", self.width)]
+
+    def nets (self):
+        return [ net('reg', self.name, self.width),
+                 net('reg', self.name + '_rd_sel'),
+                 net('reg', self.name + '_wr_sel')]
+
+    def write_cap (self):
+        return 1
+
+class write_stb_reg (config_reg):
+    def __init__ (self, name='', width=0, default=0):
+        config_reg.__init__(self, name, width, default)
+        
+    def verilog_body (self):
+        statements = ["if (reset) %s <= %d;" % (self.name, self.default),
+                      "else if (%s_wr_sel) %s <= %s;" % (self.name, self.name, 'wr_data'),
+                      "if (reset) %s_stb <= 0;" % (self.name),
+                      "else if (%s_wr_sel) %s_stb <= 1;" % (self.name),
+                      "else %s_stb <= 0;" % (self.name)
+                      ]
+        return seq_block ('clk', statements)
+
+    def io (self):
+        io_list = config_reg.io (self)
+        io_list.append ( port('output',self.name+"_stb") )
+        return io_list
+
+    def nets (self):
+        net_list = config_reg.nets (self)
+        net_list.append ( net('reg', self.name + "_stb") )
+        return net_list
+
+class read_stb_reg (status_reg):
+    def __init__ (self, name='', width=0):
+        status_reg.__init__(self, name, width)
+        
+    def verilog_body (self):
+        statements = [
+                      "if (reset) %s_stb <= 0;" % (self.name),
+                      "else if (%s_rd_sel) %s_stb <= 1;" % (self.name, self.name),
+                      "else %s_stb <= 0;" % (self.name)
+                      ]
+        return self.id_comment() + seq_block ('clk', statements)
+
+    def io (self):
+        io_list = status_reg.io (self)
+        io_list.append (port('output',self.name+"_stb"))
+        return io_list
+
+    def nets (self):
+        net_list = status_reg.nets(self)
+        net_list.append (net('reg',self.name + '_stb'))
+        return net_list
