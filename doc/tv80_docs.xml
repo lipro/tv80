@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <!DOCTYPE rfc SYSTEM "rfc2629.dtd">
 <?rfc toc="yes"?>
-<?rfc private="$Revision: 1.2 $"?>
+<?rfc private="$Revision: 1.3 $"?>
 <?rfc compact="yes"?>
 <rfc>
 <front>
@@ -102,16 +102,25 @@ which are mapped into I/O space.
   </section>
 
  </section>
+ <section title="Tool Chain">
+     <t>The minimum toolchain required to simulate the tv80 is the
+         <xref target="cver">CVer</xref> Verilog simulator, and the
+         <xref target="sdcc">SDCC</xref> compiler/assembler/linker.  In
+         addition, to run the <xref target="tvs80">tvs80</xref> instruction
+         test suite, the <xref target="dosbox">DOSBox</xref> DOS emulator
+         is required.
+     </t>
+ </section>
  <section title="Tests">
    <t>Most of the tests in the tv80 environment are written in C, and should
        be compiled with the <xref target="sdcc">sdcc</xref> compiler.  
    </t>
-     <section title="tvs80 test">
+     <section anchor="tvs80" title="tvs80 test">
       <t>The tvs80 test is different than the rest of the tests, and is 
          written in its own flavor of assembly language.  This test provides
          a fairly comprehensive Z80 instruction test.</t>
       <t>The assembler for this test only runs under DOS.  To assemble
-         under Unix/Linux, the "dosbox" DOS emulator is required.  A script
+          under Unix/Linux, the <xref target="dosbox">"dosbox" DOS emulator</xref> is required.  A script
          to run the assembler under dosbox, as well as the tvs80.asm source,
          is checked in under the "tests/tvs80" directory.</t>
      </section>
@@ -131,6 +140,19 @@ which are mapped into I/O space.
         <reference anchor="sdcc" target="http://sdcc.sourceforge.net">
             <front>
                 <title>Small Device C Compiler</title>
+            </front>
+        </reference>
+        <reference anchor="cver" target="http://www.pragmatic-c.com/gpl-cver">
+            <front>
+                <title>GPL Cver Simulator</title>
+                <author initials="A." surname="Vanvick" fullname="Andrew Vanvick">
+                    <organization>Pragmatic C Software</organization>
+                </author>
+            </front>
+        </reference>
+        <reference anchor="dosbox" target="http://dosbox.sourceforge.net">
+            <front>
+                <title>DOSBox</title>
             </front>
         </reference>
     </references>
