@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2003-2004 by Cisco Systems Inc.
- * $Id: tb.vf,v 1.2 2004-10-18 21:48:23 ghutchis Exp $
+ * $Id: tb.vf,v 1.2.4.1 2004-11-30 21:59:31 ghutchis Exp $
  * All rights reserved.
  *
  * Author: Guy Hutchison
@@ -9,6 +9,9 @@
 
 rtl/core/tv80_alu.v
 rtl/core/tv80_mcode.v
+rtl/core/tv80_mcode_base.v
+rtl/core/tv80_mcode_cb.v
+rtl/core/tv80_mcode_ed.v
 rtl/core/tv80_reg.v
 rtl/core/tv80_core.v
 rtl/core/tv80s.v
