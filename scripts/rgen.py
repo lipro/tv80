@@ -30,28 +30,12 @@ def node_info (node):
     print "Methods:",dir(node)
     print "Child Nodes:",node.childNodes
 
-def number (str):
-    try:
-        robj = re.compile ("(\d+)'([dhb])([\da-fA-F]+)")
-        mobj = robj.match (str)
-        if (mobj):
-            if mobj.group(2) == 'h': radix = 16
-            elif mobj.group(2) == 'b': radix = 2
-            else: radix = 10
-    
-            return int (mobj.group(3), radix)
-        else:
-            return int(str)
-    except ValueError:
-        print "ERROR: number conversion of %s failed" % str
-        return 0
-
 def create_reg_group (node):
     rg = reglib.register_group()
 
     rg.name = node.getAttribute ("name")
-    rg.addr_size = number(node.getAttribute ("addr_sz"))
-    rg.base_addr = number(node.getAttribute ("base_addr"))
+    rg.addr_size = reglib.number(node.getAttribute ("addr_sz"))
+    rg.base_addr = reglib.number(node.getAttribute ("base_addr"))
 
     return rg
 
@@ -61,10 +45,16 @@ def create_register (rg, node):
     type = node.getAttribute ("type")
     params['width'] = int(node.getAttribute ("width"))
     params['default'] = node.getAttribute ("default")
+    params['int_value'] = node.getAttribute ("int_value")
+
+    # May switch to this code later for a more general implementation
+    #for anode in node.childNodes:
+    #    if anode.nodeType = anode.ATTRIBUTE_NODE:
+    #        params[anode.nodeName] = anode.nodeValue
 
     if type == '': type = 'config'
     if params['default'] == '': params['default'] = 0
-    else: params['default'] = number (params['default'])
+    else: params['default'] = reglib.number (params['default'])
 
     rg.add_register (type, params)
 

@@ -19,10 +19,27 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 # SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-import string, math
+import string, math, re
 
 def log2 (num):
     return math.ceil (math.log (num) / math.log (2))
+
+# function that tries to interpret a number in Verilog notation
+def number (str):
+    try:
+        robj = re.compile ("(\d+)'([dhb])([\da-fA-F]+)")
+        mobj = robj.match (str)
+        if (mobj):
+            if mobj.group(2) == 'h': radix = 16
+            elif mobj.group(2) == 'b': radix = 2
+            else: radix = 10
+    
+            return int (mobj.group(3), radix)
+        else:
+            return int(str)
+    except ValueError:
+        print "ERROR: number conversion of %s failed" % str
+        return 0
 
 def comb_block (statements):
     result = 'always @*\n'
@@ -96,7 +113,8 @@ class register_group:
     # create a hook for post-processing to be done after all data has been
     # added to the object.
     def post (self):
-        self.int_ports()
+        if (self.interrupts):
+            self.int_ports()
         
     # create port for interrupt pin, as well as port for data output enable
     # when interrupt is asserted.
@@ -104,6 +122,7 @@ class register_group:
     def int_ports (self):
         self.ports.append (port ('output','int_n'))
         self.nets.append (net ('reg','int_n'))
+        self.nets.append (net ('reg','int_vec',self.data_size))
 
     def int_logic (self):
         statements = []
@@ -120,8 +139,8 @@ class register_group:
         # create read and write selects for each register
         for r in self.registers:
             slogic =  "block_select & (addr[%d:%d] == %d) & !rd_n" % (self.local_width-1,0,r.offset)
-            if r.interrupt:
-                slogic = "%s_int | (%s)" % (r.name, slogic)
+            #if r.interrupt:
+            #    slogic = "%s_int | (%s)" % (r.name, slogic)
             s = "%s_rd_sel = %s;" % (r.name,slogic)
             statements.append (s)
             if r.write_cap():
@@ -138,11 +157,23 @@ class register_group:
         #for r in self.registers:
         #    s += "assign rd_data = (%s_rd_sel) ? %s : %d'bz;\n" % (r.name, r.name, self.data_size)
 
+        # create interrupt address mux
+        if (self.interrupts):
+            sments.append ("case (1'b1)")
+            for r in self.registers:
+                if r.interrupt:
+                    sments.append ("  %s_int : int_vec = %d;" % (r.name, r.int_value))
+            sments.append ("  default : int_vec = %d'bx;" % self.data_size)
+            sments.append ("endcase")
+
+        # create data-output mux
         sments.append ("case (1'b1)")
         for r in self.registers:
             sments.append ("  %s_rd_sel : rd_data = %s;" % (r.name, r.name))
             rd_sel_list.append (r.name + "_rd_sel")
-        sments.append ("  default : rd_data = %d'bx;" % self.data_size)
+        if (self.interrupts):
+            sments.append ("  default : rd_data = int_vec;")
+        else: sments.append ("  default : rd_data = %d'bx;" % self.data_size)
         sments.append ("endcase")
 
         sments.append ("doe = %s;" % string.join (rd_sel_list, ' | '))
@@ -185,7 +216,7 @@ class register_group:
             self.add (config_reg (params['name'],params['width'],params['default']))
         elif (type == 'int_fixed'):
             r2 = config_reg (params['name'] + "_msk",params['width'],params['default'])
-            r1 = int_fixed_reg (params['name'],r2,params['width'])
+            r1 = int_fixed_reg (params['name'],r2,number(params['int_value']),params['width'])
             self.add (r1)
             self.add (r2)
             self.interrupts += 1
@@ -194,7 +225,7 @@ class register_group:
         elif (type == 'read_stb'):
             self.add (read_stb_reg (params['name'],params['width']))
         elif (type == 'write_stb'):
-            self.add (config_reg (params['name'],params['width'],params['default']))
+            self.add (write_stb_reg (params['name'],params['width'],params['default']))
         else:
             print "Unknown register type",type
 
@@ -266,10 +297,11 @@ class config_reg (basic_register):
         return 1
 
 class int_fixed_reg (basic_register):
-    def __init__ (self, name, mask_reg, width=0):
+    def __init__ (self, name, mask_reg, int_value, width=0):
         basic_register.__init__(self, name, width)
         self.mask_reg = mask_reg
         self.interrupt = 1
+        self.int_value = int_value
         
     def verilog_body (self):
         statements = ["if (reset) %s <= %d;" % (self.name, 0),
@@ -325,7 +357,7 @@ class write_stb_reg (config_reg):
         statements = ["if (reset) %s <= %d;" % (self.name, self.default),
                       "else if (%s_wr_sel) %s <= %s;" % (self.name, self.name, 'wr_data'),
                       "if (reset) %s_stb <= 0;" % (self.name),
-                      "else if (%s_wr_sel) %s_stb <= 1;" % (self.name),
+                      "else if (%s_wr_sel) %s_stb <= 1;" % (self.name, self.name),
                       "else %s_stb <= 0;" % (self.name)
                       ]
         return seq_block ('clk', statements)
