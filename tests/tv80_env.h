@@ -12,6 +12,9 @@ sfr at 0x82 timeout_port;
 sfr at 0x83 max_timeout_low;
 sfr at 0x84 max_timeout_high;
 sfr at 0x90 intr_cntdwn;
+sfr at 0x91 cksum_value;
+sfr at 0x92 cksum_accum;
+sfr at 0x93 inc_on_read;
 
 #define SC_TEST_PASSED 0x01
 #define SC_TEST_FAILED 0x02
