@@ -1082,9 +1082,8 @@ ld_166:		ld	a,data_aa
 		cp	l
 		jr	z,push_0
 		fail_msg 166
-push_0:		nop
+push_0:		ld	sp,stack_end
                 print	"push_0"
-                ld	sp,stack_end
 		ld	bc,data_1234
 		push	bc
 		ld	bc,0
@@ -1201,6 +1200,7 @@ push_19:	ld	a,data_aa
 		jr	z,push_20
 		fail_msg 19
 push_20:	ld	sp,stack_end
+                print	"ex_0"
 ex_0:		ld	de,data_1234
 		ld	hl,data_ffff
 		ex	de,hl
@@ -1361,7 +1361,9 @@ ex_31:		ld	a,#34      ;bjp was >data_1234
 		cp	l
 		jr	z,add_0
 		fail_msg 31
-add_0:		ld	a,0
+add_0:		nop
+		print   "add_0"
+		ld	a,0
 		ld	b,data_7f
 		add	a,b
 		cp	data_7f
@@ -1604,7 +1606,9 @@ add_72:		add	a,1
 add_73:		cp	data_80+1
 		jr	z,adc_0
 		fail_msg 73
-adc_0:		ld	a,0                 ;clear cry 
+adc_0:		nop
+		print   "adc_0"
+		ld	a,0                 ;clear cry 
 		add	a,0
 		ld	b,data_7f
 		adc	a,b                  ;a=7f cry=0
@@ -1854,7 +1858,9 @@ adc_79:		adc	a,1
 adc_80:		cp	data_80+1
 		jr	z,sub_0
 		fail_msg 80
-sub_0:		ld	a,0
+sub_0:		nop
+		print   "sub_0"
+		ld	a,0
 		ld	b,1
 		sub	a,b
 		jp	m,sub_1
@@ -2047,7 +2053,9 @@ sub_61:		sub	a,(iy+2)
 sub_62:		cp	data_80+1
 		jr	z,sbc_0
 		fail_msg 62
-sbc_0:		ld	a,data_7f
+sbc_0:		nop
+		print   "sbc_0"
+		ld	a,data_7f
 		ld	b,0
 		sub	a,b			;clear carry flag
 		ld	b,data_ff
@@ -2245,7 +2253,9 @@ sbc_64:		sbc	a,(ix+1)
 sbc_65:		cp	data_55+1
 		jr	z,and_0
 		fail_msg 65
-and_0:		ld	a,data_ff
+and_0:		nop
+		print	"and_0"
+		ld	a,data_ff
 		add	a,1			;set carry
 		ld	a,data_ff
 		ld	b,data_aa
@@ -2410,7 +2420,9 @@ and_46:		and	a,(iy-1)
 and_47:		cp	data_55
 		jr	z,or_0
 		fail_msg 47
-or_0:		ld	a,0
+or_0:		nop
+		print   "or_0"
+		ld	a,0
 		ld	b,data_7f
 		or	a,b
 		jp	p,or_1
@@ -2598,7 +2610,9 @@ or_49:		ld	(iy+2),data_55
 or_50:		cp	data_55
 		jr	z,xor_0
 		fail_msg 50
-xor_0:		ld	a,data_ff
+xor_0:		nop
+		print	"xor_0"
+		ld	a,data_ff
 		ld	b,data_55
 		xor	a,b
 		jp	m,xor_1
@@ -2797,7 +2811,9 @@ xor_57:		xor	a,(iy-1)
 xor_58:		cp	data_55
 		jr	z,cp_0
 		fail_msg 58
-cp_0:		ld	a,0
+cp_0:		nop
+		print	"cp_0"
+		ld	a,0
 		ld	b,0
 		cp	a,b
 		jr	z,cp_1
