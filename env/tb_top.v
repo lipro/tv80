@@ -98,7 +98,61 @@ module tb_top;
      .addr				(A[7:0]),
      .DO				(do[7:0]));
 
-  wire   nwintf_sel = !iorq_n & (A[7:3] == 5'b00001);
+  //----------------------------------------------------------------------
+  // UART
+  //----------------------------------------------------------------------
+
+  wire                uart_cs_n;
+  wire [7:0]          uart_rd_data;
+
+  wire                sin;
+  wire                cts_n;
+  wire                dsr_n;
+  wire                ri_n;
+  wire                dcd_n;
+
+  wire                sout;
+  wire                rts_n;
+  wire                dtr_n;
+  wire                out1_n;
+  wire                out2_n;
+  wire                baudout;
+  wire                intr;
+
+  // base address of 0x18 (24dec)
+  
+  assign              uart_cs_n = ~(!iorq_n & (A[7:3] == 5'h3));
+  assign              di = (!uart_cs_n & !rd_n) ? uart_rd_data : 8'bz;
+  assign              sin = sout;
+
+  T16450 uart0
+    (.reset_n     (reset_n),
+     .clk         (clk),
+     .rclk        (baudout),
+     .cs_n        (uart_cs_n),
+     .rd_n        (rd_n),
+     .wr_n        (wr_n),
+     .addr        (A[2:0]),
+     .wr_data     (do),
+     .rd_data     (uart_rd_data),
+     .sin         (sin),
+     .cts_n       (cts_n),
+     .dsr_n       (dsr_n),
+     .ri_n        (ri_n),
+     .dcd_n       (dcd_n),
+     .sout        (sout),
+     .rts_n       (rts_n),
+     .dtr_n       (dtr_n),
+     .out1_n      (out1_n),
+     .out2_n      (out2_n),
+     .baudout     (baudout),
+     .intr        (intr));
+  
+  //----------------------------------------------------------------------
+  // Network Interface
+  //----------------------------------------------------------------------
+  
+  //wire   nwintf_sel = !iorq_n & (A[7:3] == 5'b00001);
   wire [7:0] rx_data, tx_data;
   wire       rx_clk, rx_dv, rx_er;
   wire       tx_dv, tx_er;
@@ -113,29 +167,7 @@ module tb_top;
 
   assign     di = (nwintf_oe) ? nw_data_out : 8'bz;
 
-`ifdef OLD_INTERFACE
-  simple_gmii nwintf
-    (
-     // Outputs
-     .tx_dv                             (tx_dv),
-     .tx_er                             (tx_er),
-     .tx_data                           (tx_data),
-     .tx_clk                            (tx_clk),
-     .io_data_out                       (nw_data_out),
-     // Inputs
-     .clk                               (clk),
-     .reset                             (!reset_n),
-     .rx_data                           (rx_data),
-     .rx_clk                            (rx_clk),
-     .rx_dv                             (rx_dv),
-     .rx_er                             (rx_er),
-     .io_select                         (nwintf_sel),
-     .rd_n                              (rd_n),
-     .wr_n                              (wr_n),
-     .io_addr                           (A[2:0]),
-     .io_data_in                        (do));
-`else // !`ifdef OLD_INTERFACE
-simple_gmii_top nwintf
+  simple_gmii_top nwintf
     (
      // unused outputs
      .int_n                             (),
@@ -159,9 +191,12 @@ simple_gmii_top nwintf
      .wr_n                              (wr_n),
      .addr                              (A[15:0]),
      .wr_data                           (do));
-`endif // !`ifdef OLD_INTERFACE
   
-  initial
+  //----------------------------------------------------------------------
+  // Global Initialization
+  //----------------------------------------------------------------------
+  
+   initial
     begin
       clear_ram;
       reset_n = 0;
