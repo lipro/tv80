@@ -2615,10 +2615,6 @@ module tv80_mcode
                       begin
                         Set_BusB_To = 4'b0110;
                         Set_Addr_To = aBC;
-                      end
-                    
-                    MCycle[2] :
-                      begin
                         if (IR[3] == 1'b0 ) 
                           begin
                             IncDec_16 = 4'b0110;
@@ -2626,6 +2622,18 @@ module tv80_mcode
                         else 
                           begin
                             IncDec_16 = 4'b1110;
+                          end
+                      end
+                    
+                    MCycle[2] :
+                      begin
+                        if (IR[3] == 1'b0 ) 
+                          begin
+                            IncDec_16 = 4'b0010;
+                          end 
+                        else 
+                          begin
+                            IncDec_16 = 4'b1010;
                           end
                         IORQ = 1'b1;
                         Write = 1'b1;
@@ -2714,6 +2722,6 @@ module tv80_mcode
     end // always @ (IR, ISet, MCycle, F, NMICycle, IntCycle)
   
   // synopsys dc_script_begin
-  // set_attribute current_design "revision" "$Id: tv80_mcode.v,v 1.4 2004-10-05 08:09:43 ghutchis Exp $" -type string -quiet
+  // set_attribute current_design "revision" "$Id: tv80_mcode.v,v 1.5 2004-11-03 00:14:26 ghutchis Exp $" -type string -quiet
   // synopsys dc_script_end
 endmodule // T80_MCode
