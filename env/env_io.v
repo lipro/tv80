@@ -53,6 +53,7 @@ module env_io (/*AUTOARG*/
 	    8'h90 : io_data = int_countdown;
             8'h91 : io_data = checksum;
             8'h93 : io_data = ior_value;
+            8'h94 : io_data = {$random};
             default : io_data = 8'hzz;
           endcase // case(addr)
         end // if (!iorq_n & !rd_n)
