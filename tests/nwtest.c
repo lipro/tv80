@@ -74,8 +74,15 @@ int main ()
     sim_ctl_port = 0x02;
 
   // pull all the data from the interface into a buffer
-  for (i=0; i<rx_count; i++)
-    rxbuf[i] = nw_rx_data;
+  //for (i=0; i<rx_count; i++)
+  //  rxbuf[i] = nw_rx_data;
+  _asm
+    in    a, (_nw_rx_cnt_low)
+    ld    b, a
+    ld    hl, #_rxbuf
+    ld    c, #_nw_rx_data
+    inir
+  _endasm;
 
   // check the status bit
   if ((nw_status & 0x01) != 0)
