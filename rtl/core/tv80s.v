@@ -68,7 +68,7 @@ module tv80s (/*AUTOARG*/
 
   assign    cen = 1;
 
-  tv80_core i_tv80_core
+  tv80_core #(Mode, IOWait) i_tv80_core
     (
      .cen (cen),
      .m1_n (m1_n),

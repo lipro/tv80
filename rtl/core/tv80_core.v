@@ -33,7 +33,7 @@ module tv80_core (/*AUTOARG*/
   // End of automatics
   
   parameter Mode = 1;	// 0 => Z80, 1 => Fast Z80, 2 => 8080, 3 => GB
-  parameter IOWait = 1;	// 1 => Single cycle I/O, 1 => Std I/O cycle
+  parameter IOWait = 1;	// 0 => Single cycle I/O, 1 => Std I/O cycle
   parameter Flag_C = 0;
   parameter Flag_N = 1;
   parameter Flag_P = 2;
@@ -1341,7 +1341,7 @@ module tv80_core (/*AUTOARG*/
     end // always @ *
   
 // synopsys dc_script_begin
-// set_attribute current_design "revision" "$Id: tv80_core.v,v 1.3 2004-09-22 18:06:56 ghutchis Exp $" -type string -quiet
+// set_attribute current_design "revision" "$Id: tv80_core.v,v 1.4 2004-10-05 08:09:43 ghutchis Exp $" -type string -quiet
 // synopsys dc_script_end
 endmodule // T80
 
