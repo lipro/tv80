@@ -208,7 +208,7 @@ module tv80_mcode (/*AUTOARG*/
       IRB = IR;
 
       MCycles = 3'b001;
-      if (MCycle == 3'b001 ) 
+      if (MCycle[0] ) 
         begin
 	  TStates = 3'b100;
 	end 
@@ -930,7 +930,7 @@ module tv80_mcode (/*AUTOARG*/
 		  // XOR A,n
 		  // CP A,n
 		  MCycles = 3'b010;
-		  if (MCycle == 3'b010 ) 
+		  if (MCycle[1] ) 
                     begin
 		      Inc_PC = 1'b1;
 		      Read_To_Reg = 1'b1;
@@ -1907,7 +1907,7 @@ module tv80_mcode (/*AUTOARG*/
 		  // SRA r
 		  // SRL r
 		  // SLL r (Undocumented) / SWAP r
-		  if (MCycle == 3'b001 ) begin
+		  if (MCycle[0] ) begin
 		    ALU_Op = 4'b1000;
 		    Read_To_Reg = 1'b1;
 		    Save_ALU = 1'b1;
@@ -1953,7 +1953,7 @@ module tv80_mcode (/*AUTOARG*/
 		  8'b01111000,8'b01111001,8'b01111010,8'b01111011,8'b01111100,8'b01111101,8'b01111111 :
                     begin
 		      // BIT b,r
-		      if (MCycle == 3'b001 )
+		      if (MCycle[0] )
                         begin
                           Set_BusB_To[2:0] = IR[2:0];
 			  ALU_Op = 4'b1001;
@@ -1987,7 +1987,7 @@ module tv80_mcode (/*AUTOARG*/
 		  8'b11111000,8'b11111001,8'b11111010,8'b11111011,8'b11111100,8'b11111101,8'b11111111 :
                     begin
 		      // SET b,r
-		      if (MCycle == 3'b001 ) 
+		      if (MCycle[0] ) 
                         begin
 			  ALU_Op = 4'b1010;
 			  Read_To_Reg = 1'b1;
@@ -2026,7 +2026,7 @@ module tv80_mcode (/*AUTOARG*/
 		  8'b10111000,8'b10111001,8'b10111010,8'b10111011,8'b10111100,8'b10111101,8'b10111111 :
                     begin
 		      // RES b,r
-		      if (MCycle == 3'b001 ) 
+		      if (MCycle[0] ) 
                         begin
 			  ALU_Op = 4'b1011;
 			  Read_To_Reg = 1'b1;
@@ -2685,7 +2685,7 @@ module tv80_mcode (/*AUTOARG*/
          
       if (Mode == 1 ) 
         begin
-	  if (MCycle == 3'b001 ) 
+	  if (MCycle[0] ) 
             begin
               //TStates = 3'b100;
 	    end 
@@ -2697,7 +2697,7 @@ module tv80_mcode (/*AUTOARG*/
 
       if (Mode == 3 ) 
         begin
-	  if (MCycle == 3'b001 ) 
+	  if (MCycle[0] ) 
             begin
 	      //TStates = 3'b100;
 	    end 
@@ -2709,7 +2709,7 @@ module tv80_mcode (/*AUTOARG*/
 
       if (Mode < 2 ) 
         begin
-	  if (MCycle == 3'b110 ) 
+	  if (MCycle[5] ) 
             begin
 	      Inc_PC = 1'b1;
 	      if (Mode == 1 ) 
@@ -2724,7 +2724,7 @@ module tv80_mcode (/*AUTOARG*/
 		  Set_Addr_To = aNone;
 		end
 	    end
-	  if (MCycle == 3'b111 ) 
+	  if (MCycle[6] ) 
             begin
 	      if (Mode == 0 ) 
                 begin
@@ -2751,7 +2751,7 @@ module tv80_mcode (/*AUTOARG*/
     end // always @ (IR, ISet, MCycle, F, NMICycle, IntCycle)
   
 // synopsys dc_script_begin
-// set_attribute current_design "revision" "$Id: tv80_mcode.v,v 1.1 2004-05-16 17:39:57 ghutchis Exp $" -type string -quiet
+// set_attribute current_design "revision" "$Id: tv80_mcode.v,v 1.2 2004-09-21 17:32:52 ghutchis Exp $" -type string -quiet
 // synopsys dc_script_end
 endmodule // T80_MCode
 

@@ -63,8 +63,8 @@ module tv80s (/*AUTOARG*/
   wire          write;
   wire          iorq;
   reg [7:0]     di_reg;
-  wire [2:0]    mcycle;
-  wire [2:0]    tstate;
+  wire [6:0]    mcycle;
+  wire [6:0]    tstate;
 
   assign    cen = 1;
 
@@ -111,20 +111,20 @@ module tv80s (/*AUTOARG*/
 	  wr_n <= #1 1'b1;
 	  iorq_n <= #1 1'b1;
 	  mreq_n <= #1 1'b1;
-	  if (mcycle == 3'b001)
+	  if (mcycle[0])
             begin
-	      if (tstate == 3'b001 || (tstate == 3'b010 && wait_n == 1'b0))
+	      if (tstate[1] || (tstate[2] && wait_n == 1'b0))
                 begin
 		  rd_n <= #1 ~ intcycle_n;
 		  mreq_n <= #1 ~ intcycle_n;
 		  iorq_n <= #1 intcycle_n;
 	        end
-	      if (tstate == 3'b011)
+	      if (tstate[3])
 		mreq_n <= #1 1'b0;
-            end // if (mcycle == 3'b001)          
+            end // if (mcycle[0])          
 	  else
             begin
-	      if ((tstate == 3'b001 || (tstate == 3'b010 && wait_n == 1'b0)) && no_read == 1'b0 && write == 1'b0)
+	      if ((tstate[1] || (tstate[2] && wait_n == 1'b0)) && no_read == 1'b0 && write == 1'b0)
                 begin
 		  rd_n <= #1 1'b0;
 		  iorq_n <= #1 ~ iorq;
@@ -132,7 +132,7 @@ module tv80s (/*AUTOARG*/
 		end
 	      if (T2Write == 0)
                 begin                          
-		  if (tstate == 3'b010 && write == 1'b1)
+		  if (tstate[2] && write == 1'b1)
                     begin
 		      wr_n <= #1 1'b0;
 		      iorq_n <= #1 ~ iorq;
@@ -141,7 +141,7 @@ module tv80s (/*AUTOARG*/
                 end
 	      else
                 begin
-		  if ((tstate == 3'b001 || (tstate == 3'b010 && wait_n == 1'b0)) && write == 1'b1)
+		  if ((tstate[1] || (tstate[2] && wait_n == 1'b0)) && write == 1'b1)
                     begin
 		      wr_n <= #1 1'b0;
 		      iorq_n <= #1 ~ iorq;
@@ -149,9 +149,9 @@ module tv80s (/*AUTOARG*/
 		  end
 	        end // else: !if(T2write == 0)
               
-	    end // else: !if(mcycle == 3'b001)
+	    end // else: !if(mcycle[0])
           
-	  if (tstate == 3'b010 && wait_n == 1'b1)
+	  if (tstate[2] && wait_n == 1'b1)
 	    di_reg <= #1 di;
 	end // else: !if(!reset_n)
     end // always @ (posedge clk or negedge reset_n)

@@ -61,8 +61,8 @@ module tv80_core (/*AUTOARG*/
   input [7:0]   dinst;	
   input [7:0]   di;	
   output [7:0]  do;	
-  output [2:0]  mc;	
-  output [2:0]  ts;	
+  output [6:0]  mc;	
+  output [6:0]  ts;	
   output	intcycle_n;	
   output	IntE;		
   output	stop;		
@@ -74,8 +74,8 @@ module tv80_core (/*AUTOARG*/
   reg    busak_n;		
   reg [15:0] A; 
   reg [7:0]  do;	
-  reg [2:0]  mc;	
-  reg [2:0]  ts;	
+  reg [6:0]  mc;	
+  reg [6:0]  ts;	
   reg	intcycle_n;	
   reg	IntE;		
   reg	stop;		
@@ -117,8 +117,9 @@ module tv80_core (/*AUTOARG*/
   reg [15:0]    ID16;
   reg [7:0]     Save_Mux;
 
-  reg [2:0]     tstate;
-  reg [2:0]     mcycle;
+  reg [6:0]     tstate;
+  reg [6:0]     mcycle;
+  reg           last_mcycle, last_tstate;
   reg           IntE_FF1;
   reg           IntE_FF2;
   reg           Halt_FF;
@@ -281,20 +282,62 @@ module tv80_core (/*AUTOARG*/
      .F_Out                (F_Out)
      );
 
+  function [6:0] number_to_bitvec;
+    input [2:0] num;
+    begin
+      case (num)
+        1 : number_to_bitvec = 7'b0000001;
+        2 : number_to_bitvec = 7'b0000010;
+        3 : number_to_bitvec = 7'b0000100;
+        4 : number_to_bitvec = 7'b0001000;
+        5 : number_to_bitvec = 7'b0010000;
+        6 : number_to_bitvec = 7'b0100000;
+        7 : number_to_bitvec = 7'b1000000;
+        default : number_to_bitvec = 7'bx;
+      endcase // case(num)
+    end
+  endfunction // number_to_bitvec
+  
+  always @(/*AUTOSENSE*/mcycle or mcycles or tstate or tstates)
+    begin
+      case (mcycles)
+        1 : last_mcycle = mcycle[0];
+        2 : last_mcycle = mcycle[1];
+        3 : last_mcycle = mcycle[2];
+        4 : last_mcycle = mcycle[3];
+        5 : last_mcycle = mcycle[4];
+        6 : last_mcycle = mcycle[5];
+        7 : last_mcycle = mcycle[6];
+        default : last_mcycle = 1'bx;
+      endcase // case(mcycles)
+
+      case (tstates)
+        0 : last_tstate = tstate[0];
+        1 : last_tstate = tstate[1];
+        2 : last_tstate = tstate[2];
+        3 : last_tstate = tstate[3];
+        4 : last_tstate = tstate[4];
+        5 : last_tstate = tstate[5];
+        6 : last_tstate = tstate[6];
+        default : last_tstate = 1'bx;
+      endcase
+    end // always @ (...
+  
+          
   always @(/*AUTOSENSE*/ALU_Q or BusAck or BusB or DI_Reg
-	   or ExchangeRp or IR or Save_ALU_r or Set_Addr_To or XY_Ind
-	   or XY_State or cen or mcycle or tstate or tstates)
+           or ExchangeRp or IR or Save_ALU_r or Set_Addr_To or XY_Ind
+           or XY_State or cen or last_tstate or mcycle)
     begin
       ClkEn = cen && ~ BusAck;
 
-      if (tstate == tstates)
+      if (last_tstate)
         T_Res = 1'b1;
       else T_Res = 1'b0;
       
       if (XY_State != 2'b00 && XY_Ind == 1'b0 &&
 	  ((Set_Addr_To == aXY) ||
-	   (mcycle == 3'b001 && IR == 8'b11001011) ||
-	   (mcycle == 3'b001 && IR == 8'b00110110)))
+	   (mcycle[0] && IR == 8'b11001011) ||
+	   (mcycle[0] && IR == 8'b00110110)))
         NextIs_XY_Fetch = 1'b1;
       else 
         NextIs_XY_Fetch = 1'b0;
@@ -358,7 +401,7 @@ module tv80_core (/*AUTOARG*/
 
 	      Arith16_r <= #1 Arith16;
 	      PreserveC_r <= #1 PreserveC;
-	      if (ISet == 2'b10 && ALU_Op[2] == 1'b0 && ALU_Op[0] == 1'b1 && mcycle == 3'b011 ) 
+	      if (ISet == 2'b10 && ALU_Op[2] == 1'b0 && ALU_Op[0] == 1'b1 && mcycle[2] ) 
                 begin
 		  Z16_r <= #1 1'b1;
 		end 
@@ -367,11 +410,11 @@ module tv80_core (/*AUTOARG*/
 		  Z16_r <= #1 1'b0;
 		end
 
-	      if (mcycle  == 3'b001 && tstate[2] == 1'b0 ) 
+	      if (mcycle[0] && (tstate[1] | tstate[2] | tstate[3] )) 
                 begin
 		  // mcycle == 1 && tstate == 1, 2, || 3
 
-		  if (tstate == 2 && wait_n == 1'b1 ) 
+		  if (tstate[2] && wait_n == 1'b1 ) 
                     begin
 		      if (Mode < 2 ) 
                         begin
@@ -435,7 +478,7 @@ module tv80_core (/*AUTOARG*/
                 begin
 		  // either (mcycle > 1) OR (mcycle == 1 AND tstate > 3)
 
-		  if (mcycle == 3'b110 ) 
+		  if (mcycle[5] ) 
                     begin
 		      XY_Ind <= #1 1'b1;
 		      if (Prefix == 2'b01 ) 
@@ -463,12 +506,12 @@ module tv80_core (/*AUTOARG*/
 			    A <= #1 TmpAddr;
 			    PC <= #1 TmpAddr;
 			  end 
-                        else if (mcycle == mcycles && NMICycle == 1'b1 ) 
+                        else if (last_mcycle && NMICycle == 1'b1 ) 
                           begin
 			    A <= #1 16'b0000000001100110;
 			    PC <= #1 16'b0000000001100110;
 			  end 
-                        else if (mcycle == 3'b011 && IntCycle == 1'b1 && IStatus == 2'b10 ) 
+                        else if (mcycle[2] && IntCycle == 1'b1 && IStatus == 2'b10 ) 
                           begin
 			    A[15:8] <= #1 I;
 			    A[7:0] <= #1 TmpAddr[7:0];
@@ -560,7 +603,7 @@ module tv80_core (/*AUTOARG*/
                                 end
 			    endcase // case(Set_Addr_To)
                             
-			  end // else: !if(mcycle == 3'b011 && IntCycle == 1'b1 && IStatus == 2'b10 )
+			  end // else: !if(mcycle[2] && IntCycle == 1'b1 && IStatus == 2'b10 )
                       
 
 		      Save_ALU_r <= #1 Save_ALU;
@@ -596,9 +639,9 @@ module tv80_core (/*AUTOARG*/
 		    end // if (T_Res == 1'b1 )
                   
 
-		  if (tstate == 2 && wait_n == 1'b1 ) 
+		  if (tstate[2] && wait_n == 1'b1 ) 
                     begin
-		      if (ISet == 2'b01 && mcycle == 3'b111 ) 
+		      if (ISet == 2'b01 && mcycle[6] ) 
                         begin
 			  IR <= #1 dinst;
 			end
@@ -623,12 +666,12 @@ module tv80_core (/*AUTOARG*/
 			  //TmpAddr[5:3] <= #1 IR[5:3];
 			end
 		    end
-		  if (tstate == 3 && mcycle == 3'b110 ) 
+		  if (tstate[3] && mcycle[5] ) 
                     begin
                       TmpAddr <= #1 SP16;
 		    end
 
-		  if ((tstate == 2 && wait_n == 1'b1) || (tstate == 4 && mcycle == 3'b001) ) 
+		  if ((tstate[2] && wait_n == 1'b1) || (tstate[4] && mcycle[0]) ) 
                     begin
 		      if (IncDec_16[2:0] == 3'b111 ) 
                         begin
@@ -654,7 +697,7 @@ module tv80_core (/*AUTOARG*/
 		end // else: !if(mcycle  == 3'b001 && tstate(2) == 1'b0 )
               
 
-	      if (tstate == 3 ) 
+	      if (tstate[3] ) 
                 begin
 		  if (LDZ == 1'b1 ) 
                     begin
@@ -729,7 +772,7 @@ module tv80_core (/*AUTOARG*/
 		end // if (T_Res == 1'b1 && I_INRC == 1'b1 )
               
 
-	      if (tstate == 1 && Auto_Wait_t1 == 1'b0 ) 
+	      if (tstate[1] && Auto_Wait_t1 == 1'b0 ) 
                 begin
 		  do <= #1 BusB;
 		  if (I_RLD == 1'b1 ) 
@@ -755,7 +798,7 @@ module tv80_core (/*AUTOARG*/
 		    end
 		end
 
-	      if (tstate == 1 && I_BT == 1'b1 ) 
+	      if (tstate[1] && I_BT == 1'b1 ) 
                 begin
 		  F[Flag_X] <= #1 ALU_Q[3];
 		  F[Flag_Y] <= #1 ALU_Q[1];
@@ -767,7 +810,7 @@ module tv80_core (/*AUTOARG*/
 		  F[Flag_P] <= #1 IncDecZ;
 		end
 
-	      if ((tstate == 1 && Save_ALU_r == 1'b0 && Auto_Wait_t1 == 1'b0) ||
+	      if ((tstate[1] && Save_ALU_r == 1'b0 && Auto_Wait_t1 == 1'b0) ||
 		  (Save_ALU_r == 1'b1 && ALU_Op_r != 4'b0111) ) 
                 begin
 		  case (Read_To_Reg_r)
@@ -818,7 +861,7 @@ module tv80_core (/*AUTOARG*/
             begin
 	      RegAddrC <= #1 { Alternate, 2'b10 };
 	    end
-	  if (((JumpXY == 1'b1 || LDSPHL == 1'b1) && XY_State != 2'b00) || (mcycle == 3'b110) ) 
+	  if (((JumpXY == 1'b1 || LDSPHL == 1'b1) && XY_State != 2'b00) || (mcycle[5]) ) 
             begin
 	      RegAddrC <= #1 { XY_State[1],  2'b11 };
 	    end
@@ -827,7 +870,7 @@ module tv80_core (/*AUTOARG*/
             begin
 	      IncDecZ <= #1 F_Out[Flag_Z];
 	    end
-	  if ((tstate == 2 || (tstate == 3 && mcycle == 3'b001)) && IncDec_16[2:0] == 3'b100 ) 
+	  if ((tstate[2] || (tstate[3] && mcycle[0])) && IncDec_16[2:0] == 3'b100 ) 
             begin
 	      if (ID16 == 0 ) 
                 begin
@@ -846,20 +889,20 @@ module tv80_core (/*AUTOARG*/
   
 
   always @(/*AUTOSENSE*/Alternate or ExchangeDH or IncDec_16
-	   or RegAddrA_r or RegAddrB_r or XY_State or mcycle or tstate)
+           or RegAddrA_r or RegAddrB_r or XY_State or mcycle or tstate)
     begin
-      if ((tstate == 2 || (tstate == 3 && mcycle == 3'b001 && IncDec_16[2] == 1'b1)) && XY_State == 2'b00)
+      if ((tstate[2] || (tstate[3] && mcycle[0] && IncDec_16[2] == 1'b1)) && XY_State == 2'b00)
         RegAddrA = { Alternate, IncDec_16[1:0] };
-      else if ((tstate == 2 || (tstate == 3 && mcycle == 3'b001 && IncDec_16[2] == 1'b1)) && IncDec_16[1:0] == 2'b10)
+      else if ((tstate[2] || (tstate[3] && mcycle[0] && IncDec_16[2] == 1'b1)) && IncDec_16[1:0] == 2'b10)
         RegAddrA = { XY_State[1], 2'b11 };
-      else if (ExchangeDH == 1'b1 && tstate == 3)
+      else if (ExchangeDH == 1'b1 && tstate[3])
         RegAddrA = { Alternate, 2'b10 };
-      else if (ExchangeDH == 1'b1 && tstate == 4)
+      else if (ExchangeDH == 1'b1 && tstate[4])
 	RegAddrA = { Alternate, 2'b01 };
       else
         RegAddrA = RegAddrA_r;
       
-      if (ExchangeDH == 1'b1 && tstate == 3)
+      if (ExchangeDH == 1'b1 && tstate[3])
         RegAddrB = { Alternate, 2'b01 };
       else
         RegAddrB = RegAddrB_r;
@@ -867,12 +910,12 @@ module tv80_core (/*AUTOARG*/
   
 
   always @(/*AUTOSENSE*/ALU_Op_r or Auto_Wait_t1 or ExchangeDH
-	   or IncDec_16 or Read_To_Reg_r or Save_ALU_r or mcycle
-	   or tstate or wait_n)
+           or IncDec_16 or Read_To_Reg_r or Save_ALU_r or mcycle
+           or tstate or wait_n)
     begin
       RegWEH = 1'b0;
       RegWEL = 1'b0;
-      if ((tstate == 1 && Save_ALU_r == 1'b0 && Auto_Wait_t1 == 1'b0) ||
+      if ((tstate[1] && Save_ALU_r == 1'b0 && Auto_Wait_t1 == 1'b0) ||
 	  (Save_ALU_r == 1'b1 && ALU_Op_r != 4'b0111) ) 
         begin
 	  case (Read_To_Reg_r)
@@ -886,13 +929,13 @@ module tv80_core (/*AUTOARG*/
 	end // if ((tstate == 1 && Save_ALU_r == 1'b0 && Auto_Wait_t1 == 1'b0) ||...
       
 
-      if (ExchangeDH == 1'b1 && (tstate == 3 || tstate == 4) ) 
+      if (ExchangeDH == 1'b1 && (tstate[3] || tstate[4]) ) 
         begin
 	  RegWEH = 1'b1;
 	  RegWEL = 1'b1;
 	end
 
-      if (IncDec_16[2] == 1'b1 && ((tstate == 2 && wait_n == 1'b1 && mcycle != 3'b001) || (tstate == 3 && mcycle == 3'b001)) ) 
+      if (IncDec_16[2] == 1'b1 && ((tstate[2] && wait_n == 1'b1 && mcycle != 3'b001) || (tstate[3] && mcycle[0])) ) 
         begin
 	  case (IncDec_16[1:0])
 	    2'b00 , 2'b01 , 2'b10 :
@@ -906,22 +949,22 @@ module tv80_core (/*AUTOARG*/
   
 
   always @(/*AUTOSENSE*/ExchangeDH or ID16 or IncDec_16 or RegBusA_r
-	   or RegBusB or Save_Mux or mcycle or tstate)
+           or RegBusB or Save_Mux or mcycle or tstate)
     begin
       RegDIH = Save_Mux;
       RegDIL = Save_Mux;
 
-      if (ExchangeDH == 1'b1 && tstate == 3 ) 
+      if (ExchangeDH == 1'b1 && tstate[3] ) 
         begin
 	  RegDIH = RegBusB[15:8];
 	  RegDIL = RegBusB[7:0];
 	end
-      else if (ExchangeDH == 1'b1 && tstate == 4 ) 
+      else if (ExchangeDH == 1'b1 && tstate[4] ) 
         begin
 	  RegDIH = RegBusA_r[15:8];
 	  RegDIL = RegBusA_r[7:0];
 	end
-      else if (IncDec_16[2] == 1'b1 && ((tstate == 2 && mcycle != 3'b001) || (tstate == 3 && mcycle == 3'b001)) ) 
+      else if (IncDec_16[2] == 1'b1 && ((tstate[2] && mcycle != 3'b001) || (tstate[3] && mcycle[0])) ) 
         begin
 	  RegDIH = ID16[15:8];
 	  RegDIL = ID16[7:0];
@@ -1034,7 +1077,7 @@ module tv80_core (/*AUTOARG*/
         begin
 	  if (cen == 1'b1 ) 
             begin
-	      if (mcycle == 3'b001 && ((tstate == 2  && wait_n == 1'b1) || tstate == 3) ) 
+	      if (mcycle[0] && ((tstate[2]  && wait_n == 1'b1) || tstate[3]) ) 
                 begin
 		  rfsh_n <= #1 1'b0;
 		end 
@@ -1048,7 +1091,7 @@ module tv80_core (/*AUTOARG*/
   
 
   always @(/*AUTOSENSE*/BusAck or Halt_FF or I_DJNZ or IntCycle
-	   or IntE_FF1 or di or iorq_i or mcycle or tstate)
+           or IntE_FF1 or di or iorq_i or mcycle or tstate)
     begin
       mc = mcycle;
       ts = tstate;
@@ -1106,8 +1149,8 @@ module tv80_core (/*AUTOARG*/
     begin
       if (reset_n == 1'b0 ) 
         begin
-	  mcycle <= #1 3'b001;
-	  tstate <= #1 3'b000;
+	  mcycle <= #1 7'b0000001;
+	  tstate <= #1 7'b0000001;
 	  Pre_XY_F_M <= #1 3'b000;
 	  Halt_FF <= #1 1'b0;
 	  BusAck <= #1 1'b0;
@@ -1136,7 +1179,7 @@ module tv80_core (/*AUTOARG*/
 	      No_BTR <= #1 (I_BT && (~ IR[4] || ~ F[Flag_P])) ||
 			(I_BC && (~ IR[4] || F[Flag_Z] || ~ F[Flag_P])) ||
 			(I_BTR && (~ IR[4] || F[Flag_Z]));
-	      if (tstate == 2 ) 
+	      if (tstate[2] ) 
                 begin
 		  if (SetEI == 1'b1 ) 
                     begin
@@ -1148,7 +1191,7 @@ module tv80_core (/*AUTOARG*/
 		      IntE_FF1 <= #1 IntE_FF2;
 		    end
 		end
-	      if (tstate == 3 ) 
+	      if (tstate[3] ) 
                 begin
 		  if (SetDI == 1'b1 ) 
                     begin
@@ -1160,7 +1203,7 @@ module tv80_core (/*AUTOARG*/
                 begin
 		  Halt_FF <= #1 1'b0;
 		end
-	      if (mcycle == 3'b001 && tstate == 2 && wait_n == 1'b1 ) 
+	      if (mcycle[0] && tstate[2] && wait_n == 1'b1 ) 
                 begin
 		  m1_n <= #1 1'b1;
 		end
@@ -1170,7 +1213,7 @@ module tv80_core (/*AUTOARG*/
               else 
                 begin
 		  BusAck <= #1 1'b0;
-		  if (tstate == 2 && wait_n == 1'b0 ) 
+		  if (tstate[2] && wait_n == 1'b0 ) 
                     begin
 		    end 
                   else if (T_Res == 1'b1 ) 
@@ -1185,26 +1228,26 @@ module tv80_core (/*AUTOARG*/
 			end 
                       else 
                         begin
-			  tstate <= #1 3'b001;
+			  tstate <= #1 7'b0000001;
 			  if (NextIs_XY_Fetch == 1'b1 ) 
                             begin
-			      mcycle <= #1 3'b110;
+			      mcycle <= #1 7'b0100000;
 			      Pre_XY_F_M <= #1 mcycle;
 			      if (IR == 8'b00110110 && Mode == 0 ) 
                                 begin
 				  Pre_XY_F_M <= #1 3'b010;
 				end
 			    end 
-                          else if ((mcycle == 3'b111) || (mcycle == 3'b110 && Mode == 1 && ISet != 2'b01) ) 
+                          else if ((mcycle[6]) || (mcycle[5] && Mode == 1 && ISet != 2'b01) ) 
                             begin
-			      mcycle <= #1 Pre_XY_F_M + 1;
+			      mcycle <= #1 number_to_bitvec(Pre_XY_F_M + 1);
 			    end 
-                          else if ((mcycle == mcycles) ||
+                          else if ((last_mcycle) ||
 				   No_BTR == 1'b1 ||
-				   (mcycle == 3'b010 && I_DJNZ == 1'b1 && IncDecZ == 1'b1) ) 
+				   (mcycle[1] && I_DJNZ == 1'b1 && IncDecZ == 1'b1) ) 
                             begin
 			      m1_n <= #1 1'b0;
-			      mcycle <= #1 3'b001;
+			      mcycle <= #1 7'b0000001;
 			      IntCycle <= #1 1'b0;
 			      NMICycle <= #1 1'b0;
 			      if (NMI_s == 1'b1 && Prefix == 2'b00 ) 
@@ -1221,7 +1264,7 @@ module tv80_core (/*AUTOARG*/
 			    end 
                           else 
                             begin
-			      mcycle <= #1 mcycle + 1;
+			      mcycle <= #1 { mcycle[5:0], mcycle[6] };
 			    end
 			end
 		    end 
@@ -1230,11 +1273,11 @@ module tv80_core (/*AUTOARG*/
 		      if ( ~(Auto_Wait == 1'b1 && Auto_Wait_t2 == 1'b0) &&
 			   ~(IOWait == 1 && iorq_i == 1'b1 && Auto_Wait_t1 == 1'b0) ) 
                         begin
-			  tstate <= #1 tstate + 1;
+			  tstate <= #1 { tstate[5:0], tstate[6] };
 			end
 		    end
 		end
-	      if (tstate == 0 ) 
+	      if (tstate[0]) 
                 begin
 		  m1_n <= #1 1'b0;
 		end
@@ -1243,7 +1286,7 @@ module tv80_core (/*AUTOARG*/
     end
 
   always @(/*AUTOSENSE*/BTR_r or DI_Reg or IncDec_16 or JumpE or PC
-	   or RegBusA or RegBusC or SP or tstate)
+           or RegBusA or RegBusC or SP or tstate)
     begin
       if (JumpE == 1'b1 ) 
         begin
@@ -1258,7 +1301,7 @@ module tv80_core (/*AUTOARG*/
           PC16_B = 1;
 	end
 
-      if (tstate == 3)
+      if (tstate[3])
         begin
           SP16_A = RegBusC;
           SP16_B = { {8{DI_Reg[7]}}, DI_Reg };
@@ -1290,7 +1333,7 @@ module tv80_core (/*AUTOARG*/
       Auto_Wait = 1'b0;
       if (IntCycle == 1'b1 || NMICycle == 1'b1 ) 
         begin
-	  if (mcycle == 3'b001 ) 
+	  if (mcycle[0] ) 
             begin
 	      Auto_Wait = 1'b1;
 	    end
@@ -1298,7 +1341,7 @@ module tv80_core (/*AUTOARG*/
     end // always @ *
   
 // synopsys dc_script_begin
-// set_attribute current_design "revision" "$Id: tv80_core.v,v 1.1 2004-05-16 17:39:57 ghutchis Exp $" -type string -quiet
+// set_attribute current_design "revision" "$Id: tv80_core.v,v 1.2 2004-09-21 17:32:52 ghutchis Exp $" -type string -quiet
 // synopsys dc_script_end
 endmodule // T80
 
