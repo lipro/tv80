@@ -1,3 +1,6 @@
+`define TV80_CORE_PATH tb_top.tv80s_inst.i_tv80_core
+`define TV80_INSTRUCTION_DECODE
+
 module tb_top;
 
   reg         clk;
@@ -89,7 +92,7 @@ module tb_top;
 
   initial
     begin
-      //dumpon;
+      dumpon;
       clear_ram;
       reset_n = 0;
       wait_n = 1;
@@ -101,6 +104,23 @@ module tb_top;
       reset_n = 1;
     end
       
+`ifdef TV80_INSTRUCTION_DECODE
+  reg [7:0] state;
+  initial
+    state = 0;
+     
+  always @(posedge clk)
+    begin : inst_decode
+      if ((`TV80_CORE_PATH.mcycle[6:0] == 1) && 
+          (`TV80_CORE_PATH.tstate[6:0] == 8))
+        begin
+          op_decode.decode (`TV80_CORE_PATH.IR[7:0], state);
+        end
+      else if (`TV80_CORE_PATH.mcycle[6:0] != 1)
+        state = 0;
+    end
+`endif
+  
 `include "env_tasks.v"
   
 endmodule // tb_top

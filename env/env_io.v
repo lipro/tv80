@@ -111,7 +111,10 @@ module env_io (/*AUTOARG*/
 	  int_countdown = 0;
 	end
       else if (int_countdown > 1)
-	int_countdown = int_countdown - 1;
+        begin
+	  int_countdown = int_countdown - 1;
+	  tb_top.int_n  <= #1 1'b1;
+        end
     end
   
 endmodule // env_io
