@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2003-2004 by Cisco Systems Inc.
- * $Id: tb.vf,v 1.2 2004-10-18 21:48:23 ghutchis Exp $
+ * $Id: tb.vf,v 1.3 2004-12-16 01:18:17 ghutchis Exp $
  * All rights reserved.
  *
  * Author: Guy Hutchison
@@ -12,6 +12,9 @@ rtl/core/tv80_mcode.v
 rtl/core/tv80_reg.v
 rtl/core/tv80_core.v
 rtl/core/tv80s.v
+rtl/simple_gmii/simple_gmii.v
+rtl/simple_gmii/sync2.v
+rtl/simple_gmii/ram_1r_1w.v
 env/tb_top.v
 env/env_io.v
 env/op_decode.v

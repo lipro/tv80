@@ -47,6 +47,7 @@ module env_io (/*AUTOARG*/
           io_cs = (addr[7:5] == 3'b100);
 
           case (addr)
+            8'h82 : io_data = timeout_ctl;
 	    8'h83 : io_data = max_timeout[7:0];
 	    8'h84 : io_data = max_timeout[15:8];
 

@@ -89,6 +89,42 @@ module tb_top;
      .addr				(A[7:0]),
      .DO				(do[7:0]));
 
+  wire   nwintf_sel = !iorq_n & (A[7:3] == 5'b00001);
+  wire [7:0] rx_data, tx_data;
+  wire       rx_clk, rx_dv, rx_er;
+  wire       tx_dv, tx_er;
+  wire       tx_clk;
+  wire [7:0] nw_data_out;
+  
+  // loopback config
+  assign     rx_data = tx_data;
+  assign     rx_dv = tx_dv;
+  assign     rx_er = tx_er;
+  assign     rx_clk = tx_clk;
+
+  assign     di = (nwintf_sel & !rd_n) ? nw_data_out : 8'bz;
+  
+  simple_gmii nwintf
+    (
+     // Outputs
+     .tx_dv                             (tx_dv),
+     .tx_er                             (tx_er),
+     .tx_data                           (tx_data),
+     .tx_clk                            (tx_clk),
+     .io_data_out                       (nw_data_out),
+     // Inputs
+     .clk                               (clk),
+     .reset                             (!reset_n),
+     .rx_data                           (rx_data),
+     .rx_clk                            (rx_clk),
+     .rx_dv                             (rx_dv),
+     .rx_er                             (rx_er),
+     .io_select                         (nwintf_sel),
+     .rd_n                              (rd_n),
+     .wr_n                              (wr_n),
+     .io_addr                           (A[2:0]),
+     .io_data_in                        (do));
+
   initial
     begin
       clear_ram;
