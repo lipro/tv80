@@ -345,6 +345,11 @@ task decode0;
         $display ("%t: OPCODE  : JP    NC,address", $time);
         state = {4'd1, 4'd2};
       end
+    8'hd3 :
+      begin
+        $display ("%t: OPCODE  : OUT   (byte),A", $time);
+        state = {4'd1, 4'd1};
+      end
     8'hd4 : 
       begin
         $display ("%t: OPCODE  : CALL  NC,address", $time);

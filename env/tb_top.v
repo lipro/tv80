@@ -91,7 +91,6 @@ module tb_top;
 
   initial
     begin
-      dumpon;
       clear_ram;
       reset_n = 0;
       wait_n = 1;
@@ -101,7 +100,18 @@ module tb_top;
       $readmemh (`PROGRAM_FILE,  tb_top.rom.mem);
       repeat (20) @(negedge clk);
       reset_n = 1;
+    end // initial begin
+
+`ifdef DUMP_START
+  always
+    begin
+      if ($time > `DUMP_START)
+	dumpon;
+      #100;
     end
+`endif
+  
+  
 /*
   always
     begin

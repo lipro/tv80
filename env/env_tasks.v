@@ -1,3 +1,8 @@
+reg  dumping;
+
+initial
+  dumping = 0;
+  
 task test_pass;
     begin
       $display ("%t: --- TEST PASSED ---", $time);
@@ -16,8 +21,12 @@ endtask // test_fail
 
 task dumpon;
     begin
-      $dumpfile (`DUMPFILE_NAME);
-      $dumpvars;
+      if (!dumping)
+	begin
+	  $dumpfile (`DUMPFILE_NAME);
+	  $dumpvars;
+	  dumping = 1;
+	end
     end
 endtask // dumpon
 
