@@ -25,7 +25,7 @@ testname = sys.argv[1]
 simulator = "cver"
 
 filelist = " -f env/tb.vf"
-testdef  = " +incdir+env -l logs/%s.log +define+DUMPFILE_NAME=\\\"logs/%s.dump\\\" +define+PROGRAM_FILE=\\\"tests/%s.vmem\\\"" % (testname, testname, testname)
+testdef  = " +incdir+env -l logs/%s.log +define+DUMPFILE_NAME=\\\"logs/%s.dump\\\" +define+ROM_FILE=\\\"tests/%s.vmem\\\" +define+RAM_FILE=\\\"tests/%s.vmem\\\"" % (testname, testname, testname+"_rom", testname+"_ram")
 
 os.chdir ("tests")
 os.system ("make %s.vmem" % testname)

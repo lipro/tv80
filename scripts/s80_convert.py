@@ -19,20 +19,18 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 # SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-import sys, os
+import mem_image
+import sys
 
-testname = sys.argv[1]
-simulator = "cver"
+ram_start = 0x8000
+ram_end   = 0xffff
+rom_start = 0x0000
+rom_end   = 0x7fff
+src_file  = "tests/tvs80.ihx"
+rom_file  = "tests/tvs80_rom.vmem"
+ram_file  = "tests/tvs80_ram.vmem"
 
-filelist = " -f env/tb.vf"
-testdef  = " +incdir+env -l logs/%s.log +define+DUMPFILE_NAME=\\\"logs/%s.dump\\\" +define+PROGRAM_FILE=\\\"tests/%s.vmem\\\"" % (testname, testname, testname)
-
-os.chdir ("tests")
-os.system ("make %s.vmem" % testname)
-os.chdir ("..")
-
-command = simulator + filelist + testdef
-
-print "command:",command
-os.system (command)
-
+conv = mem_image.mem_image()
+conv.load_ihex (src_file)
+conv.save_vmem (rom_file, rom_start, rom_end)
+conv.save_vmem (ram_file, ram_start, ram_end)
