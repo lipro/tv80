@@ -1228,7 +1228,7 @@ module tv80_core (/*AUTOARG*/
 			end 
                       else 
                         begin
-			  tstate <= #1 7'b0000001;
+			  tstate <= #1 7'b0000010;
 			  if (NextIs_XY_Fetch == 1'b1 ) 
                             begin
 			      mcycle <= #1 7'b0100000;
@@ -1341,7 +1341,7 @@ module tv80_core (/*AUTOARG*/
     end // always @ *
   
 // synopsys dc_script_begin
-// set_attribute current_design "revision" "$Id: tv80_core.v,v 1.2 2004-09-21 17:32:52 ghutchis Exp $" -type string -quiet
+// set_attribute current_design "revision" "$Id: tv80_core.v,v 1.3 2004-09-22 18:06:56 ghutchis Exp $" -type string -quiet
 // synopsys dc_script_end
 endmodule // T80
 
