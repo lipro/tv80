@@ -46,7 +46,7 @@ module tv80_mcode (/*AUTOARG*/
 
   input [7:0]           IR;
   input [1:0]           ISet			;
-  input [2:0]           MCycle			;
+  input [6:0]           MCycle			;
   input [7:0]           F		       	;
   input 		NMICycle		;
   input 		IntCycle		;
@@ -293,92 +293,74 @@ module tv80_mcode (/*AUTOARG*/
                 begin
 		  // LD r,n
 		  MCycles = 3'b010;
-		  case (MCycle)
-			2  :
-                          begin
-				Inc_PC = 1'b1;
-				Set_BusA_To[2:0] = DDD;
-				Read_To_Reg = 1'b1;
-                          end
-		    default :;
-		  endcase // case(MCycle)
+                  if (MCycle[1])
+                    begin
+		      Inc_PC = 1'b1;
+		      Set_BusA_To[2:0] = DDD;
+		      Read_To_Reg = 1'b1;
+                    end
                 end // case: 8'b00000110,8'b00001110,8'b00010110,8'b00011110,8'b00100110,8'b00101110,8'b00111110
               
 	      8'b01000110,8'b01001110,8'b01010110,8'b01011110,8'b01100110,8'b01101110,8'b01111110  :
                   begin
 		    // LD r,(HL)
 		    MCycles = 3'b010;
-		    case (MCycle)
-		      1  :
-				Set_Addr_To = aXY;
-		      2  :
-                        begin
-			  Set_BusA_To[2:0] = DDD;
-			  Read_To_Reg = 1'b1;
-                        end
-		      default :;
-		    endcase // case(MCycle)
+                    if (MCycle[0])
+		      Set_Addr_To = aXY;
+                    if (MCycle[1])
+                      begin
+			Set_BusA_To[2:0] = DDD;
+			Read_To_Reg = 1'b1;
+                      end
                   end // case: 8'b01000110,8'b01001110,8'b01010110,8'b01011110,8'b01100110,8'b01101110,8'b01111110
               
 	      8'b01110000,8'b01110001,8'b01110010,8'b01110011,8'b01110100,8'b01110101,8'b01110111  :
                   begin
 		    // LD (HL),r
 		    MCycles = 3'b010;
-		    case (MCycle)
-		      1  :
-                        begin
-			  Set_Addr_To = aXY;
-			  Set_BusB_To[2:0] = SSS;
-			  Set_BusB_To[3] = 1'b0;
-                        end
-		      2  :
-			Write = 1'b1;
-		      default :;
-		    endcase // case(MCycle)
+                    if (MCycle[0])
+                      begin
+			Set_Addr_To = aXY;
+			Set_BusB_To[2:0] = SSS;
+			Set_BusB_To[3] = 1'b0;
+                      end
+                    if (MCycle[1])
+		      Write = 1'b1;
                   end // case: 8'b01110000,8'b01110001,8'b01110010,8'b01110011,8'b01110100,8'b01110101,8'b01110111
               
 	      8'b00110110  :
                   begin
 		    // LD (HL),n
 		    MCycles = 3'b011;
-		    case (MCycle)
-		      2  :
-                        begin
-			  Inc_PC = 1'b1;
-			  Set_Addr_To = aXY;
-			  Set_BusB_To[2:0] = SSS;
-			  Set_BusB_To[3] = 1'b0;
-                        end
-		      3  :
-			Write = 1'b1;
-		      default :;
-		    endcase // case(MCycle)
+                    if (MCycle[1])
+                      begin
+			Inc_PC = 1'b1;
+			Set_Addr_To = aXY;
+			Set_BusB_To[2:0] = SSS;
+			Set_BusB_To[3] = 1'b0;
+                      end
+		    if (MCycle[2])
+		      Write = 1'b1;
                   end // case: 8'b00110110
               
 	      8'b00001010  :
                 begin
 		  // LD A,(BC)
 		  MCycles = 3'b010;
-		  case (MCycle)
-		    1  :
-		      Set_Addr_To = aBC;
-		    2  :
-		      Read_To_Acc = 1'b1;
-		    default :;
-		  endcase // case(MCycle)
+                  if (MCycle[0])
+		    Set_Addr_To = aBC;
+		  if (MCycle[1])
+		    Read_To_Acc = 1'b1;
                 end // case: 8'b00001010
               
 	      8'b00011010  :
                 begin
 		  // LD A,(DE)
 		  MCycles = 3'b010;
-		  case (MCycle)
-		    1  :
-		      Set_Addr_To = aDE;
-		    2  :
-		      Read_To_Acc = 1'b1;
-		    default :;
-		  endcase // case(MCycle)
+                  if (MCycle[0])
+		    Set_Addr_To = aDE;
+                  if (MCycle[1])
+		    Read_To_Acc = 1'b1;
                 end // case: 8'b00011010
               
 	      8'b00111010  :
@@ -387,38 +369,32 @@ module tv80_mcode (/*AUTOARG*/
                     begin
 		      // LDD A,(HL)
 		      MCycles = 3'b010;
-		      case (MCycle)
-			1  :
-			  Set_Addr_To = aXY;
-			2  :
-                          begin
-			    Read_To_Acc = 1'b1;
-			    IncDec_16 = 4'b1110;
-                          end
-			default :;
-		      endcase
+                      if (MCycle[0])
+			Set_Addr_To = aXY;
+                      if (MCycle[1])
+                        begin
+			  Read_To_Acc = 1'b1;
+			  IncDec_16 = 4'b1110;
+                        end
 		    end 
                   else 
                     begin
 		      // LD A,(nn)
 		      MCycles = 3'b100;
-		      case (MCycle)
-			2  :
-                          begin
-			    Inc_PC = 1'b1;
-			    LDZ = 1'b1;
-                          end
-			3  :
-                          begin
-			    Set_Addr_To = aZI;
-			    Inc_PC = 1'b1;
-                          end
-			4  :
-                          begin
-			    Read_To_Acc = 1'b1;
-                          end
-			default :;
-		      endcase
+                      if (MCycle[1])
+                        begin
+			  Inc_PC = 1'b1;
+			  LDZ = 1'b1;
+                        end
+                      if (MCycle[2])
+                        begin
+			  Set_Addr_To = aZI;
+			  Inc_PC = 1'b1;
+                        end
+                      if (MCycle[3])
+                        begin
+			  Read_To_Acc = 1'b1;
+                        end
 		    end // else: !if(Mode == 3 )
                 end // case: 8'b00111010
               
@@ -426,31 +402,28 @@ module tv80_mcode (/*AUTOARG*/
                 begin
 		  // LD (BC),A
 		  MCycles = 3'b010;
-		  case (MCycle)
-		    1  :
-                      begin
-			Set_Addr_To = aBC;
-			Set_BusB_To = 4'b0111;
-                      end
-		    2  :
-                      begin
-		        Write = 1'b1;
-                      end
-		    default :;
-		  endcase // case(MCycle)
+                  if (MCycle[0])
+                    begin
+		      Set_Addr_To = aBC;
+		      Set_BusB_To = 4'b0111;
+                    end
+                  if (MCycle[1])
+                    begin
+		      Write = 1'b1;
+                    end
                 end // case: 8'b00000010
               
 	      8'b00010010  :
                 begin
 		  // LD (DE),A
 		  MCycles = 3'b010;
-		  case (MCycle)
-		    1  :
+		  case (1'b1) // MCycle
+		    MCycle[0] :
                       begin
 			Set_Addr_To = aDE;
 			Set_BusB_To = 4'b0111;
                       end
-		    2  :
+		    MCycle[1] :
 		      Write = 1'b1;
 		    default :;
 		  endcase // case(MCycle)
@@ -462,13 +435,13 @@ module tv80_mcode (/*AUTOARG*/
                     begin
 		      // LDD (HL),A
 		      MCycles = 3'b010;
-		      case (MCycle)
-			1  :
+		      case (1'b1) // MCycle
+			MCycle[0] :
                           begin
 			    Set_Addr_To = aXY;
 			    Set_BusB_To = 4'b0111;
                           end
-			2  :
+			MCycle[1] :
                           begin
 			    Write = 1'b1;
 			    IncDec_16 = 4'b1110;
@@ -481,19 +454,19 @@ module tv80_mcode (/*AUTOARG*/
                     begin
 		      // LD (nn),A
 		      MCycles = 3'b100;
-		      case (MCycle)
-			2  :
+		      case (1'b1) // MCycle
+			MCycle[1] :
                           begin
 			    Inc_PC = 1'b1;
 			    LDZ = 1'b1;
                           end
-			3  :
+			MCycle[2] :
                           begin
 			    Set_Addr_To = aZI;
 			    Inc_PC = 1'b1;
 			    Set_BusB_To = 4'b0111;
                           end
-			4  :
+			MCycle[3] :
                           begin
 			    Write = 1'b1;
                           end
@@ -508,8 +481,8 @@ module tv80_mcode (/*AUTOARG*/
                 begin
 		  // LD dd,nn
 		  MCycles = 3'b011;
-		  case (MCycle)
-		    2  :
+		  case (1'b1) // MCycle
+		    MCycle[1] :
                       begin
 			Inc_PC = 1'b1;
 			Read_To_Reg = 1'b1;
@@ -524,7 +497,7 @@ module tv80_mcode (/*AUTOARG*/
 			  end
                       end // case: 2
                     
-		    3  :
+		    MCycle[2] :
                       begin
 			Inc_PC = 1'b1;
 			Read_To_Reg = 1'b1;
@@ -549,10 +522,10 @@ module tv80_mcode (/*AUTOARG*/
                     begin
 		      // LDI A,(HL)
 		      MCycles = 3'b010;
-		      case (MCycle)
-			1  :
+		      case (1'b1) // MCycle
+			MCycle[0] :
 			  Set_Addr_To = aXY;
-			2  :
+			MCycle[1] :
                           begin
 			    Read_To_Acc = 1'b1;
 			    IncDec_16 = 4'b0110;
@@ -565,26 +538,26 @@ module tv80_mcode (/*AUTOARG*/
                     begin
 		      // LD HL,(nn)
 		      MCycles = 3'b101;
-		      case (MCycle)
-			2  :
+		      case (1'b1) // MCycle
+			MCycle[1] :
                           begin
 			    Inc_PC = 1'b1;
 			    LDZ = 1'b1;
                           end
-			3  :
+			MCycle[2] :
                           begin
 			    Set_Addr_To = aZI;
 			    Inc_PC = 1'b1;
 			    LDW = 1'b1;
                           end
-			4  :
+			MCycle[3] :
                           begin
 			    Set_BusA_To[2:0] = 3'b101; // L
 			    Read_To_Reg = 1'b1;
 			    Inc_WZ = 1'b1;
 			    Set_Addr_To = aZI;
                           end
-			5  :
+			MCycle[4] :
                           begin
 			    Set_BusA_To[2:0] = 3'b100; // H
 			    Read_To_Reg = 1'b1;
@@ -600,13 +573,13 @@ module tv80_mcode (/*AUTOARG*/
                     begin
 		      // LDI (HL),A
 		      MCycles = 3'b010;
-		      case (MCycle)
-			1  :
+		      case (1'b1) // MCycle
+			MCycle[0] :
                           begin
 			    Set_Addr_To = aXY;
 			    Set_BusB_To = 4'b0111;
                           end
-			2  :
+			MCycle[1] :
                           begin
 			    Write = 1'b1;
 			    IncDec_16 = 4'b0110;
@@ -618,14 +591,14 @@ module tv80_mcode (/*AUTOARG*/
                     begin
 		      // LD (nn),HL
 		      MCycles = 3'b101;
-		      case (MCycle)                        
-			2  :
+		      case (1'b1) // MCycle                        
+			MCycle[1] :
                           begin
 			    Inc_PC = 1'b1;
 			    LDZ = 1'b1;
                           end
                         
-			3  :
+			MCycle[2] :
                           begin
 			    Set_Addr_To = aZI;
 			    Inc_PC = 1'b1;
@@ -633,14 +606,14 @@ module tv80_mcode (/*AUTOARG*/
 			    Set_BusB_To = 4'b0101; // L
                           end
                         
-			4  :
+			MCycle[3] :
                           begin
 			    Inc_WZ = 1'b1;
 			    Set_Addr_To = aZI;
 			    Write = 1'b1;
 			    Set_BusB_To = 4'b0100; // H
                           end
-			5  :                          
+			MCycle[4] :                          
 			  Write = 1'b1;
 			default :;
 		      endcase
@@ -658,8 +631,8 @@ module tv80_mcode (/*AUTOARG*/
                 begin
 		  // PUSH qq
 		  MCycles = 3'b011;
-		  case (MCycle)                    
-		    1  :
+		  case (1'b1) // MCycle                    
+		    MCycle[0] :
                       begin
 			TStates = 3'b101;
 			IncDec_16 = 4'b1111;
@@ -676,7 +649,7 @@ module tv80_mcode (/*AUTOARG*/
 			  end
                       end // case: 1
                     
-		    2  :
+		    MCycle[1] :
                       begin
 			IncDec_16 = 4'b1111;
 			Set_Addr_To = aSP;
@@ -693,7 +666,7 @@ module tv80_mcode (/*AUTOARG*/
 			Write = 1'b1;
                       end // case: 2
                     
-		    3  :
+		    MCycle[2] :
 		      Write = 1'b1;
 		    default :;
 		  endcase // case(MCycle)
@@ -703,10 +676,10 @@ module tv80_mcode (/*AUTOARG*/
                 begin
 		  // POP qq
 		  MCycles = 3'b011;
-		  case (MCycle)
-		    1  :
+		  case (1'b1) // MCycle
+		    MCycle[0] :
 		      Set_Addr_To = aSP;
-		    2  :
+		    MCycle[1] :
                       begin
 			IncDec_16 = 4'b0111;
 			Set_Addr_To = aSP;
@@ -722,7 +695,7 @@ module tv80_mcode (/*AUTOARG*/
 			  end
                       end // case: 2
                     
-		    3  :
+		    MCycle[2] :
                       begin
 			IncDec_16 = 4'b0111;
 			Read_To_Reg = 1'b1;
@@ -758,14 +731,14 @@ module tv80_mcode (/*AUTOARG*/
                     begin
 		      // LD (nn),SP
 		      MCycles = 3'b101;
-		      case (MCycle)
-			2  :
+		      case (1'b1) // MCycle
+			MCycle[1] :
                           begin
 			    Inc_PC = 1'b1;
 			    LDZ = 1'b1;
                           end
                         
-			3  :
+			MCycle[2] :
                           begin
 			    Set_Addr_To = aZI;
 			    Inc_PC = 1'b1;
@@ -773,7 +746,7 @@ module tv80_mcode (/*AUTOARG*/
 			    Set_BusB_To = 4'b1000;
                           end
                         
-			4  :
+			MCycle[3] :
                           begin
 			    Inc_WZ = 1'b1;
 			    Set_Addr_To = aZI;
@@ -781,7 +754,7 @@ module tv80_mcode (/*AUTOARG*/
 			    Set_BusB_To = 4'b1001;
                           end
                         
-			5  :
+			MCycle[4] :
 			  Write = 1'b1;
 			default :;
 		      endcase
@@ -799,17 +772,17 @@ module tv80_mcode (/*AUTOARG*/
                     begin
 		      // RETI
 		      MCycles = 3'b011;
-		      case (MCycle)
-			1  :
+		      case (1'b1) // MCycle
+			MCycle[0] :
 			  Set_Addr_To = aSP;
-			2  :
+			MCycle[1] :
                           begin
 			    IncDec_16 = 4'b0111;
 			    Set_Addr_To = aSP;
 			    LDZ = 1'b1;
                           end
                         
-			3  :
+			MCycle[2] :
                           begin
 			    Jump = 1'b1;
 			    IncDec_16 = 4'b0111;
@@ -832,31 +805,31 @@ module tv80_mcode (/*AUTOARG*/
                     begin
 		      // EX (SP),HL
 		      MCycles = 3'b101;
-		      case (MCycle)
-			1  :
+		      case (1'b1) // MCycle
+			MCycle[0] :
 			  Set_Addr_To = aSP;
-			2  :
+			MCycle[1] :
                           begin
 			    Read_To_Reg = 1'b1;
 			    Set_BusA_To = 4'b0101;
 			    Set_BusB_To = 4'b0101;
 			    Set_Addr_To = aSP;
                           end
-			3  :
+			MCycle[2] :
                           begin
 			    IncDec_16 = 4'b0111;
 			    Set_Addr_To = aSP;
 			    TStates = 3'b100;
 			    Write = 1'b1;
                           end
-			4  :
+			MCycle[3] :
                           begin
 			    Read_To_Reg = 1'b1;
 			    Set_BusA_To = 4'b0100;
 			    Set_BusB_To = 4'b0100;
 			    Set_Addr_To = aSP;
                           end
-			5  :
+			MCycle[4] :
                           begin
 			    IncDec_16 = 4'b1111;
 			    TStates = 3'b101;
@@ -904,10 +877,10 @@ module tv80_mcode (/*AUTOARG*/
 		  // XOR A,(HL)
 		  // CP A,(HL)
 		  MCycles = 3'b010;
-		  case (MCycle)
-		    1  :
+		  case (1'b1) // MCycle
+		    MCycle[0] :
 		      Set_Addr_To = aXY;
-		    2  :
+		    MCycle[1] :
                       begin
 			Read_To_Reg = 1'b1;
 			Save_ALU = 1'b1;
@@ -955,10 +928,10 @@ module tv80_mcode (/*AUTOARG*/
                 begin
 		  // INC (HL)
 		  MCycles = 3'b011;
-		  case (MCycle)
-		    1  :
+		  case (1'b1) // MCycle
+		    MCycle[0] :
 		      Set_Addr_To = aXY;
-		    2  :
+		    MCycle[1] :
                       begin
 			TStates = 3'b100;
 			Set_Addr_To = aXY;
@@ -970,7 +943,7 @@ module tv80_mcode (/*AUTOARG*/
 			Set_BusA_To[2:0] = DDD;
                       end // case: 2
                     
-		    3  :
+		    MCycle[2] :
 		      Write = 1'b1;
 		    default :;
 		  endcase // case(MCycle)
@@ -991,10 +964,10 @@ module tv80_mcode (/*AUTOARG*/
                 begin
 		  // DEC (HL)
 		  MCycles = 3'b011;
-		  case (MCycle)
-		    1  :
+		  case (1'b1) // MCycle
+		    MCycle[0] :
 		      Set_Addr_To = aXY;
-		    2  :
+		    MCycle[1] :
                       begin
 			TStates = 3'b100;
 			Set_Addr_To = aXY;
@@ -1006,7 +979,7 @@ module tv80_mcode (/*AUTOARG*/
 			Set_BusA_To[2:0] = DDD;
                       end // case: 2
                     
-		    3  :
+		    MCycle[2] :
 		      Write = 1'b1;
 		    default :;
 		  endcase // case(MCycle)
@@ -1040,8 +1013,8 @@ module tv80_mcode (/*AUTOARG*/
                       begin
 			// NMI
 			MCycles = 3'b011;
-			case (MCycle)
-			  1  :
+			case (1'b1) // MCycle
+			  MCycle[0] :
                             begin
 			      TStates = 3'b101;
 			      IncDec_16 = 4'b1111;
@@ -1049,7 +1022,7 @@ module tv80_mcode (/*AUTOARG*/
 			      Set_BusB_To = 4'b1101;
                             end
                           
-			  2  :
+			  MCycle[1] :
                             begin
 			      TStates = 3'b100;
 			      Write = 1'b1;
@@ -1058,7 +1031,7 @@ module tv80_mcode (/*AUTOARG*/
 			      Set_BusB_To = 4'b1100;
                             end
                           
-			  3  :
+			  MCycle[2] :
                             begin
 			      TStates = 3'b100;
 			      Write = 1'b1;
@@ -1072,8 +1045,8 @@ module tv80_mcode (/*AUTOARG*/
                       begin
 			// INT (IM 2)
 			MCycles = 3'b101;
-			case (MCycle)
-			  1  :
+			case (1'b1) // MCycle
+			  MCycle[0] :
                             begin
 			      LDZ = 1'b1;
 			      TStates = 3'b101;
@@ -1082,7 +1055,7 @@ module tv80_mcode (/*AUTOARG*/
 			      Set_BusB_To = 4'b1101;
                             end
                           
-			  2  :
+			  MCycle[1] :
                             begin
 			      TStates = 3'b100;
 			      Write = 1'b1;
@@ -1091,19 +1064,19 @@ module tv80_mcode (/*AUTOARG*/
 			      Set_BusB_To = 4'b1100;
                             end
                           
-			  3  :
+			  MCycle[2] :
                             begin
 			      TStates = 3'b100;
 			      Write = 1'b1;
                             end
                           
-			  4  :
+			  MCycle[3] :
                             begin
 			      Inc_PC = 1'b1;
 			      LDZ = 1'b1;
                             end
                           
-			  5  :
+			  MCycle[4] :
 			    Jump = 1'b1;
 			  default :;
 			endcase
@@ -1127,8 +1100,8 @@ module tv80_mcode (/*AUTOARG*/
                 begin
 		  // ADD HL,ss
 		  MCycles = 3'b011;
-		  case (MCycle)
-		    2  :
+		  case (1'b1) // MCycle
+		    MCycle[1] :
                       begin
 			NoRead = 1'b1;
 			ALU_Op = 4'b0000;
@@ -1150,7 +1123,7 @@ module tv80_mcode (/*AUTOARG*/
 			Arith16 = 1'b1;
                       end // case: 2
                     
-		    3  :
+		    MCycle[2] :
                       begin
 			NoRead = 1'b1;
 			Read_To_Reg = 1'b1;
@@ -1208,21 +1181,18 @@ module tv80_mcode (/*AUTOARG*/
                 begin
 		  // JP nn
 		  MCycles = 3'b011;
-		  case (MCycle)
-		    2  :
+                  if (MCycle[1])
                       begin
 			Inc_PC = 1'b1;
 			LDZ = 1'b1;
                       end
                     
-		    3  :
+                  if (MCycle[2])
                       begin
 			Inc_PC = 1'b1;
 			Jump = 1'b1;
                       end
                     
-		    default :;
-		  endcase // case(MCycle)
                 end // case: 8'b11000011
               
 	      8'b11000010,8'b11001010,8'b11010010,8'b11011010,8'b11100010,8'b11101010,8'b11110010,8'b11111010  :
@@ -1234,13 +1204,13 @@ module tv80_mcode (/*AUTOARG*/
                           begin
 			    // LD ($FF00+C),A
 			    MCycles = 3'b010;
-			    case (MCycle)
-			      1  :
+			    case (1'b1) // MCycle
+			      MCycle[0] :
                                 begin
 				  Set_Addr_To = aBC;
 				  Set_BusB_To	= 4'b0111;
                                 end
-			      2  :
+			      MCycle[1] :
                                 begin
 				  Write = 1'b1;
 				  IORQ = 1'b1;
@@ -1254,21 +1224,21 @@ module tv80_mcode (/*AUTOARG*/
                           begin
 			    // LD (nn),A
 			    MCycles = 3'b100;
-			    case (MCycle)
-			      2  :
+			    case (1'b1) // MCycle
+			      MCycle[1] :
                                 begin
 				  Inc_PC = 1'b1;
 				  LDZ = 1'b1;
                                 end
                               
-			      3  :
+			      MCycle[2] :
                                 begin
 				  Set_Addr_To = aZI;
 				  Inc_PC = 1'b1;
 				  Set_BusB_To = 4'b0111;
                                 end
                               
-			      4  :
+			      MCycle[3] :
 				Write = 1'b1;
 			      default :;
 			    endcase // case(MCycle)
@@ -1278,10 +1248,10 @@ module tv80_mcode (/*AUTOARG*/
                           begin
 			    // LD A,($FF00+C)
 			    MCycles = 3'b010;
-			    case (MCycle)
-			      1  :
+			    case (1'b1) // MCycle
+			      MCycle[0] :
 				Set_Addr_To = aBC;
-			      2  :
+			      MCycle[1] :
                                 begin
 				  Read_To_Acc = 1'b1;
 				  IORQ = 1'b1;
@@ -1294,18 +1264,18 @@ module tv80_mcode (/*AUTOARG*/
                           begin
 			    // LD A,(nn)
 			    MCycles = 3'b100;
-			    case (MCycle)
-			      2  :
+			    case (1'b1) // MCycle
+			      MCycle[1] :
                                 begin
 				  Inc_PC = 1'b1;
 				  LDZ = 1'b1;
                                 end
-			      3  :
+			      MCycle[2] :
                                 begin
 				  Set_Addr_To = aZI;
 				  Inc_PC = 1'b1;
                                 end
-			      4  :
+			      MCycle[3] :
 				Read_To_Acc = 1'b1;
 			      default :;
 			    endcase // case(MCycle)
@@ -1316,13 +1286,13 @@ module tv80_mcode (/*AUTOARG*/
                     begin
 		      // JP cc,nn
 		      MCycles = 3'b011;
-		      case (MCycle)
-			2  :
+		      case (1'b1) // MCycle
+			MCycle[1] :
                           begin
 			    Inc_PC = 1'b1;
 			    LDZ = 1'b1;
                           end
-			3  :
+			MCycle[2] :
                           begin
 			    Inc_PC = 1'b1;
 			    if (is_cc_true(F, IR[5:3]) ) 
@@ -1342,10 +1312,10 @@ module tv80_mcode (/*AUTOARG*/
                     begin
 		      // JR e
 		      MCycles = 3'b011;
-		      case (MCycle)
-			2  :
+		      case (1'b1) // MCycle
+			MCycle[1] :
 			  Inc_PC = 1'b1;
-			3  :
+			MCycle[2] :
                           begin
 			    NoRead = 1'b1;
 			    JumpE = 1'b1;
@@ -1362,8 +1332,8 @@ module tv80_mcode (/*AUTOARG*/
                     begin
 		      // JR C,e
 		      MCycles = 3'b011;
-		      case (MCycle)
-			2  :
+		      case (1'b1) // MCycle
+			MCycle[1] :
                           begin
 			    Inc_PC = 1'b1;
 			    if (F[Flag_C] == 1'b0 ) 
@@ -1372,7 +1342,7 @@ module tv80_mcode (/*AUTOARG*/
 			      end
                           end
                         
-			3  :
+			MCycle[2] :
                           begin
 			    NoRead = 1'b1;
 			    JumpE = 1'b1;
@@ -1389,8 +1359,8 @@ module tv80_mcode (/*AUTOARG*/
                     begin
 		      // JR NC,e
 		      MCycles = 3'b011;
-		      case (MCycle)
-			2  :
+		      case (1'b1) // MCycle
+			MCycle[1] :
                           begin
 			    Inc_PC = 1'b1;
 			    if (F[Flag_C] == 1'b1 ) 
@@ -1399,7 +1369,7 @@ module tv80_mcode (/*AUTOARG*/
 			      end
                           end
                         
-			3  :
+			MCycle[2] :
                           begin
 			    NoRead = 1'b1;
 			    JumpE = 1'b1;
@@ -1416,8 +1386,8 @@ module tv80_mcode (/*AUTOARG*/
                     begin
 		      // JR Z,e
 		      MCycles = 3'b011;
-		      case (MCycle)
-			2  :
+		      case (1'b1) // MCycle
+			MCycle[1] :
                           begin
 			    Inc_PC = 1'b1;
 			    if (F[Flag_Z] == 1'b0 ) 
@@ -1426,7 +1396,7 @@ module tv80_mcode (/*AUTOARG*/
 			      end
                           end
                         
-			3  :
+			MCycle[2] :
                           begin
 			    NoRead = 1'b1;
 			    JumpE = 1'b1;
@@ -1444,8 +1414,8 @@ module tv80_mcode (/*AUTOARG*/
                     begin
 		      // JR NZ,e
 		      MCycles = 3'b011;
-		      case (MCycle)
-			2  :
+		      case (1'b1) // MCycle
+			MCycle[1] :
                           begin
 			    Inc_PC = 1'b1;
 			    if (F[Flag_Z] == 1'b1 ) 
@@ -1453,7 +1423,7 @@ module tv80_mcode (/*AUTOARG*/
 			        MCycles = 3'b010;
 			      end
                           end
-			3  :
+			MCycle[2] :
                           begin                            
 			    NoRead = 1'b1;
 			    JumpE = 1'b1;
@@ -1478,8 +1448,8 @@ module tv80_mcode (/*AUTOARG*/
                     begin
 		      // DJNZ,e
 		      MCycles = 3'b011;
-		      case (MCycle)
-			1  :
+		      case (1'b1) // MCycle
+			MCycle[0] :
                           begin
 			    TStates = 3'b101;
 			    I_DJNZ = 1'b1;
@@ -1489,12 +1459,12 @@ module tv80_mcode (/*AUTOARG*/
 			    Save_ALU = 1'b1;
 			    ALU_Op = 4'b0010;
                           end
-			2  :
+			MCycle[1] :
                           begin
 			    I_DJNZ = 1'b1;
 			    Inc_PC = 1'b1;
                           end
-			3  :
+			MCycle[2] :
                           begin
 			    NoRead = 1'b1;
 			    JumpE = 1'b1;
@@ -1511,13 +1481,13 @@ module tv80_mcode (/*AUTOARG*/
                 begin
 		  // CALL nn
 		  MCycles = 3'b101;
-		  case (MCycle)
-		    2  :
+		  case (1'b1) // MCycle
+		    MCycle[1] :
                       begin
 			Inc_PC = 1'b1;
 			LDZ = 1'b1;
                       end
-		    3  :
+		    MCycle[2] :
                       begin
 			IncDec_16 = 4'b1111;
 			Inc_PC = 1'b1;
@@ -1526,14 +1496,14 @@ module tv80_mcode (/*AUTOARG*/
 			LDW = 1'b1;
 			Set_BusB_To = 4'b1101;
                       end
-		    4  :
+		    MCycle[3] :
                       begin
 			Write = 1'b1;
 			IncDec_16 = 4'b1111;
 			Set_Addr_To = aSP;
 			Set_BusB_To = 4'b1100;
                       end
-		    5  :
+		    MCycle[4] :
                       begin
 			Write = 1'b1;
 			Call = 1'b1;
@@ -1548,13 +1518,13 @@ module tv80_mcode (/*AUTOARG*/
                     begin
 		      // CALL cc,nn
 		      MCycles = 3'b101;
-		      case (MCycle)
-			2  :
+		      case (1'b1) // MCycle
+			MCycle[1] :
                           begin
 			    Inc_PC = 1'b1;
 			    LDZ = 1'b1;
                           end
-			3  :
+			MCycle[2] :
                           begin
 			    Inc_PC = 1'b1;
 			    LDW = 1'b1;
@@ -1571,7 +1541,7 @@ module tv80_mcode (/*AUTOARG*/
 			      end // else: !if(is_cc_true(F, IR[5:3]) )
                           end // case: 3
                         
-			4  :
+			MCycle[3] :
                           begin
 			    Write = 1'b1;
 			    IncDec_16 = 4'b1111;
@@ -1579,7 +1549,7 @@ module tv80_mcode (/*AUTOARG*/
 			    Set_BusB_To = 4'b1100;
                           end
                         
-			5  :
+			MCycle[4] :
                           begin
 			    Write = 1'b1;
 			    Call = 1'b1;
@@ -1594,21 +1564,21 @@ module tv80_mcode (/*AUTOARG*/
                 begin
 		  // RET
 		  MCycles = 3'b011;
-		  case (MCycle)
-		    1  :
+		  case (1'b1) // MCycle
+		    MCycle[0] :
                       begin
 			TStates = 3'b101;
 			Set_Addr_To = aSP;
                       end
                     
-		    2  :
+		    MCycle[1] :
                       begin
 			IncDec_16 = 4'b0111;
 			Set_Addr_To = aSP;
 			LDZ = 1'b1;
                       end
                     
-		    3  :
+		    MCycle[2] :
                       begin
 			Jump = 1'b1;
 			IncDec_16 = 4'b0111;
@@ -1627,15 +1597,15 @@ module tv80_mcode (/*AUTOARG*/
                           begin
 			    // LD ($FF00+nn),A
 			    MCycles = 3'b011;
-			    case (MCycle)
-			      2  :
+			    case (1'b1) // MCycle
+			      MCycle[1] :
                                 begin
 				  Inc_PC = 1'b1;
 				  Set_Addr_To = aIOA;
 				  Set_BusB_To	= 4'b0111;
                                 end
                               
-			      3  :
+			      MCycle[2] :
 				Write = 1'b1;
 			      default :;
 			    endcase // case(MCycle)
@@ -1645,8 +1615,8 @@ module tv80_mcode (/*AUTOARG*/
                           begin
 			    // ADD SP,n
 			    MCycles = 3'b011;
-			    case (MCycle)
-			      2  :
+			    case (1'b1) // MCycle
+			      MCycle[1] :
                                 begin
 				  ALU_Op = 4'b0000;
 				  Inc_PC = 1'b1;
@@ -1656,7 +1626,7 @@ module tv80_mcode (/*AUTOARG*/
 				  Set_BusB_To = 4'b0110;
                                 end
                               
-			      3  :
+			      MCycle[2] :
                                 begin
 				  NoRead = 1'b1;
 				  Read_To_Reg = 1'b1;
@@ -1674,14 +1644,14 @@ module tv80_mcode (/*AUTOARG*/
                           begin
 			    // LD A,($FF00+nn)
 			    MCycles = 3'b011;
-			    case (MCycle)
-			      2  :
+			    case (1'b1) // MCycle
+			      MCycle[1] :
                                 begin
 				  Inc_PC = 1'b1;
 				  Set_Addr_To = aIOA;
                                 end
                               
-			      3  :
+			      MCycle[2] :
 				Read_To_Acc = 1'b1;
 			      default :;
 			    endcase // case(MCycle)
@@ -1691,21 +1661,21 @@ module tv80_mcode (/*AUTOARG*/
                           begin
 			    // LD HL,SP+n	-- Not correct !!!!!!!!!!!!!!!!!!!
 			    MCycles = 3'b101;
-			    case (MCycle)
-			      2  :
+			    case (1'b1) // MCycle
+			      MCycle[1] :
                                 begin
 				  Inc_PC = 1'b1;
 				  LDZ = 1'b1;
                                 end
                               
-			      3  :
+			      MCycle[2] :
                                 begin
 				  Set_Addr_To = aZI;
 				  Inc_PC = 1'b1;
 				  LDW = 1'b1;
                                 end
                               
-			      4  :
+			      MCycle[3] :
                                 begin
 				  Set_BusA_To[2:0] = 3'b101; // L
 				  Read_To_Reg = 1'b1;
@@ -1713,7 +1683,7 @@ module tv80_mcode (/*AUTOARG*/
 				  Set_Addr_To = aZI;
                                 end
                               
-			      5  :
+			      MCycle[4] :
                                 begin
 				  Set_BusA_To[2:0] = 3'b100; // H
 				  Read_To_Reg = 1'b1;
@@ -1730,8 +1700,8 @@ module tv80_mcode (/*AUTOARG*/
                     begin
 		      // RET cc
 		      MCycles = 3'b011;
-		      case (MCycle)
-			1  :
+		      case (1'b1) // MCycle
+			MCycle[0] :
                           begin
 			    if (is_cc_true(F, IR[5:3]) )                              
                               begin
@@ -1744,13 +1714,13 @@ module tv80_mcode (/*AUTOARG*/
 			    TStates = 3'b101;
                           end // case: 1
                         
-			2  :
+			MCycle[1] :
 	                  begin
 			    IncDec_16 = 4'b0111;
 			    Set_Addr_To = aSP;
 			    LDZ = 1'b1;
                           end
-			3  :
+			MCycle[2] :
 	                  begin
 			    Jump = 1'b1;
 			    IncDec_16 = 4'b0111;
@@ -1764,8 +1734,8 @@ module tv80_mcode (/*AUTOARG*/
                 begin
 		  // RST p
 		  MCycles = 3'b011;
-		  case (MCycle)
-		    1  :
+		  case (1'b1) // MCycle
+		    MCycle[0] :
                       begin
 			TStates = 3'b101;
 			IncDec_16 = 4'b1111;
@@ -1773,7 +1743,7 @@ module tv80_mcode (/*AUTOARG*/
 			Set_BusB_To = 4'b1101;
                       end
                     
-		    2  :
+		    MCycle[1] :
                       begin
 			Write = 1'b1;
 			IncDec_16 = 4'b1111;
@@ -1781,7 +1751,7 @@ module tv80_mcode (/*AUTOARG*/
 			Set_BusB_To = 4'b1100;
                       end
                     
-		    3  :
+		    MCycle[2] :
                       begin
 			Write = 1'b1;
 			RstP = 1'b1;
@@ -1798,14 +1768,14 @@ module tv80_mcode (/*AUTOARG*/
                     begin
 		      // IN A,(n)
 		      MCycles = 3'b011;
-		      case (MCycle)
-			2  :
+		      case (1'b1) // MCycle
+			MCycle[1] :
                           begin
 			    Inc_PC = 1'b1;
 			    Set_Addr_To = aIOA;
                           end
                         
-			3  :
+			MCycle[2] :
                           begin
 			    Read_To_Acc = 1'b1;
 			    IORQ = 1'b1;
@@ -1822,15 +1792,15 @@ module tv80_mcode (/*AUTOARG*/
                     begin
 		      // OUT (n),A
 		      MCycles = 3'b011;
-		      case (MCycle)
-			2  :
+		      case (1'b1) // MCycle
+			MCycle[1] :
                           begin
 			    Inc_PC = 1'b1;
 			    Set_Addr_To = aIOA;
 			    Set_BusB_To	= 4'b0111;
                           end
                         
-			3  :
+			MCycle[2] :
                           begin
 			    Write = 1'b1;
 			    IORQ = 1'b1;
@@ -1925,10 +1895,10 @@ module tv80_mcode (/*AUTOARG*/
 		  // SLA (HL)
 		  // SLL (HL) (Undocumented) / SWAP (HL)
 		  MCycles = 3'b011;
-		  case (MCycle)
-		    1 , 7  :
+		  case (1'b1) // MCycle
+                    MCycle[0], MCycle[6] :
 		      Set_Addr_To = aXY;
-		    2  :
+		    MCycle[1] :
                       begin
 			ALU_Op = 4'b1000;
 			Read_To_Reg = 1'b1;
@@ -1937,7 +1907,7 @@ module tv80_mcode (/*AUTOARG*/
 			TStates = 3'b100;
                       end
                     
-		    3  :
+		    MCycle[2] :
 		      Write = 1'b1;
 		    default :;
 		  endcase // case(MCycle)
@@ -1964,10 +1934,10 @@ module tv80_mcode (/*AUTOARG*/
                 begin
 		  // BIT b,(HL)
 		  MCycles = 3'b010;
-		  case (MCycle)
-		    1 , 7  :
+		  case (1'b1) // MCycle
+                    MCycle[0], MCycle[6] :
 		      Set_Addr_To = aXY;
-		    2  :
+		    MCycle[1] :
                       begin
 			ALU_Op = 4'b1001;
 			TStates = 3'b100;
@@ -1999,10 +1969,10 @@ module tv80_mcode (/*AUTOARG*/
                 begin
 		  // SET b,(HL)
 		  MCycles = 3'b011;
-		  case (MCycle)
-		    1 , 7  :
+		  case (1'b1) // MCycle
+                    MCycle[0], MCycle[6] :
 		      Set_Addr_To = aXY;
-		    2  :
+		    MCycle[1] :
                       begin
 			ALU_Op = 4'b1010;
 			Read_To_Reg = 1'b1;
@@ -2010,7 +1980,7 @@ module tv80_mcode (/*AUTOARG*/
 			Set_Addr_To = aXY;
 			TStates = 3'b100;
                       end
-		    3  :
+		    MCycle[2] :
 		      Write = 1'b1;
 		    default :;
 		  endcase // case(MCycle)
@@ -2038,10 +2008,10 @@ module tv80_mcode (/*AUTOARG*/
                 begin
 		  // RES b,(HL)
 		  MCycles = 3'b011;
-		  case (MCycle)
-		    1 , 7  :
+		  case (1'b1) // MCycle
+                    MCycle[0], MCycle[6] :
 		      Set_Addr_To = aXY;
-		    2  :
+		    MCycle[1] :
                       begin
 			ALU_Op = 4'b1011;
 			Read_To_Reg = 1'b1;
@@ -2050,7 +2020,7 @@ module tv80_mcode (/*AUTOARG*/
 			TStates = 3'b100;
                       end
                     
-		    3  :
+		    MCycle[2] :
 		      Write = 1'b1;
 		    default :;
 		  endcase // case(MCycle)
@@ -2135,21 +2105,21 @@ module tv80_mcode (/*AUTOARG*/
                     begin
 		      // LD dd,(nn)
 		      MCycles = 3'b101;
-		      case (MCycle)
-			2  :
+		      case (1'b1) // MCycle
+			MCycle[1] :
                           begin
 			    Inc_PC = 1'b1;
 			    LDZ = 1'b1;
                           end
                         
-			3  :
+			MCycle[2] :
                           begin
 			    Set_Addr_To = aZI;
 			    Inc_PC = 1'b1;
 			    LDW = 1'b1;
                           end
                         
-			4  :
+			MCycle[3] :
                           begin
 			    Read_To_Reg = 1'b1;
 			    if (IR[5:4] == 2'b11 ) 
@@ -2165,7 +2135,7 @@ module tv80_mcode (/*AUTOARG*/
 			    Set_Addr_To = aZI;
                           end // case: 4
                         
-			5  :
+			MCycle[4] :
                           begin
 			    Read_To_Reg = 1'b1;
 			    if (IR[5:4] == 2'b11 ) 
@@ -2188,14 +2158,14 @@ module tv80_mcode (/*AUTOARG*/
                     begin
 		      // LD (nn),dd
 		      MCycles = 3'b101;
-		      case (MCycle)
-			2  :
+		      case (1'b1) // MCycle
+			MCycle[1] :
                           begin
 			    Inc_PC = 1'b1;
 			    LDZ = 1'b1;
                           end
                         
-			3  :
+			MCycle[2] :
                           begin
 			    Set_Addr_To = aZI;
 			    Inc_PC = 1'b1;
@@ -2212,7 +2182,7 @@ module tv80_mcode (/*AUTOARG*/
 			      end
                           end // case: 3
                         
-			4  :
+			MCycle[3] :
                           begin
 			    Inc_WZ = 1'b1;
 			    Set_Addr_To = aZI;
@@ -2229,7 +2199,7 @@ module tv80_mcode (/*AUTOARG*/
 			      end
                           end // case: 4
                         
-			5  :
+			MCycle[4] :
                           begin
 			    Write = 1'b1;
                           end
@@ -2242,14 +2212,14 @@ module tv80_mcode (/*AUTOARG*/
                     begin
 		      // LDI, LDD, LDIR, LDDR
 		      MCycles = 3'b100;
-		      case (MCycle)
-			1  :
+		      case (1'b1) // MCycle
+			MCycle[0] :
                           begin
 			    Set_Addr_To = aXY;
 			    IncDec_16 = 4'b1100; // BC
                           end
                         
-			2  :
+			MCycle[1] :
                           begin
 			    Set_BusB_To = 4'b0110;
 			    Set_BusA_To[2:0] = 3'b111;
@@ -2265,7 +2235,7 @@ module tv80_mcode (/*AUTOARG*/
 			      end
                           end // case: 2
                         
-			3  :
+			MCycle[2] :
                           begin
 			    I_BT = 1'b1;
 			    TStates = 3'b101;
@@ -2280,7 +2250,7 @@ module tv80_mcode (/*AUTOARG*/
 			      end
                           end // case: 3
                         
-			4  :
+			MCycle[3] :
                           begin
 			    NoRead = 1'b1;
 			    TStates = 3'b101;
@@ -2294,14 +2264,14 @@ module tv80_mcode (/*AUTOARG*/
                     begin
 		      // CPI, CPD, CPIR, CPDR
 		      MCycles = 3'b100;
-		      case (MCycle)
-			1  :
+		      case (1'b1) // MCycle
+			MCycle[0] :
                           begin
 			    Set_Addr_To = aXY;
 			    IncDec_16 = 4'b1100; // BC
                           end
                         
-			2  :
+			MCycle[1] :
                           begin
 			    Set_BusB_To = 4'b0110;
 			    Set_BusA_To[2:0] = 3'b111;
@@ -2318,14 +2288,14 @@ module tv80_mcode (/*AUTOARG*/
 			      end
                           end // case: 2
                         
-			3  :
+			MCycle[2] :
                           begin
 			    NoRead = 1'b1;
 			    I_BC = 1'b1;
 			    TStates = 3'b101;
                           end
                         
-			4  :
+			MCycle[3] :
                           begin
 			    NoRead = 1'b1;
 			    TStates = 3'b101;
@@ -2364,8 +2334,8 @@ module tv80_mcode (/*AUTOARG*/
                     begin
 		      // ADC HL,ss
 		      MCycles = 3'b011;
-		      case (MCycle)
-			2  :
+		      case (1'b1) // MCycle
+			MCycle[1] :
                           begin
 			    NoRead = 1'b1;
 			    ALU_Op = 4'b0001;
@@ -2384,7 +2354,7 @@ module tv80_mcode (/*AUTOARG*/
 			    TStates = 3'b100;
                           end // case: 2
                         
-			3  :
+			MCycle[2] :
                           begin
 			    NoRead = 1'b1;
 			    Read_To_Reg = 1'b1;
@@ -2410,8 +2380,8 @@ module tv80_mcode (/*AUTOARG*/
                     begin
 		      // SBC HL,ss
 		      MCycles = 3'b011;
-		      case (MCycle)
-			2  :
+		      case (1'b1) // MCycle
+			MCycle[1] :
                           begin
 			    NoRead = 1'b1;
 			    ALU_Op = 4'b0011;
@@ -2430,7 +2400,7 @@ module tv80_mcode (/*AUTOARG*/
 			    TStates = 3'b100;
                           end // case: 2
                         
-			3  :
+			MCycle[2] :
                           begin
 			    NoRead = 1'b1;
 			    ALU_Op = 4'b0011;
@@ -2454,14 +2424,14 @@ module tv80_mcode (/*AUTOARG*/
                     begin
 		      // RLD
 		      MCycles = 3'b100;
-		      case (MCycle)
-			2  :
+		      case (1'b1) // MCycle
+			MCycle[1] :
                           begin
 			    NoRead = 1'b1;
 			    Set_Addr_To = aXY;
                           end
                         
-			3  :
+			MCycle[2] :
                           begin
 			    Read_To_Reg = 1'b1;
 			    Set_BusB_To[2:0] = 3'b110;
@@ -2472,7 +2442,7 @@ module tv80_mcode (/*AUTOARG*/
 			    Save_ALU = 1'b1;
                           end
                         
-			4  :
+			MCycle[3] :
                           begin
 			    I_RLD = 1'b1;
 			    Write = 1'b1;
@@ -2486,10 +2456,10 @@ module tv80_mcode (/*AUTOARG*/
                     begin
 		      // RRD
 		      MCycles = 3'b100;
-		      case (MCycle)
-			2  :
+		      case (1'b1) // MCycle
+			MCycle[1] :
 			  Set_Addr_To = aXY;
-			3  :
+			MCycle[2] :
                           begin
 			    Read_To_Reg = 1'b1;
 			    Set_BusB_To[2:0] = 3'b110;
@@ -2500,7 +2470,7 @@ module tv80_mcode (/*AUTOARG*/
 			    Save_ALU = 1'b1;
                           end
                         
-			4  :
+			MCycle[3] :
                           begin
 			    I_RRD = 1'b1;
 			    Write = 1'b1;
@@ -2514,18 +2484,18 @@ module tv80_mcode (/*AUTOARG*/
                     begin
 		      // RETI, RETN
 		      MCycles = 3'b011;
-		      case (MCycle)
-			1  :
+		      case (1'b1) // MCycle
+			MCycle[0] :
 			  Set_Addr_To = aSP;
                         
-			2  :
+			MCycle[1] :
                           begin
 			    IncDec_16 = 4'b0111;
 			    Set_Addr_To = aSP;
 			    LDZ = 1'b1;
                           end
                         
-			3  :
+			MCycle[2] :
                           begin
 			    Jump = 1'b1;
 			    IncDec_16 = 4'b0111;
@@ -2540,11 +2510,11 @@ module tv80_mcode (/*AUTOARG*/
                     begin
 		      // IN r,(C)
 		      MCycles = 3'b010;
-		      case (MCycle)
-			1  :
+		      case (1'b1) // MCycle
+			MCycle[0] :
 			  Set_Addr_To = aBC;
                         
-			2  :
+			MCycle[1] :
                           begin
 			    IORQ = 1'b1;
 			    if (IR[5:3] != 3'b110 ) 
@@ -2564,8 +2534,8 @@ module tv80_mcode (/*AUTOARG*/
 		      // OUT (C),r
 		      // OUT (C),0
 		      MCycles = 3'b010;
-		      case (MCycle)
-			1  :
+		      case (1'b1) // MCycle
+			MCycle[0] :
                           begin
 			    Set_Addr_To = aBC;
 			    Set_BusB_To[2:0]	= IR[5:3];
@@ -2575,7 +2545,7 @@ module tv80_mcode (/*AUTOARG*/
 			      end
                           end
                         
-			2  :
+			MCycle[1] :
                           begin
 			    Write = 1'b1;
 			    IORQ = 1'b1;
@@ -2589,8 +2559,8 @@ module tv80_mcode (/*AUTOARG*/
                     begin
 		      // INI, IND, INIR, INDR
 		      MCycles = 3'b100;
-		      case (MCycle)
-			1  :
+		      case (1'b1) // MCycle
+			MCycle[0] :
                           begin
 			    Set_Addr_To = aBC;
 			    Set_BusB_To = 4'b1010;
@@ -2600,14 +2570,14 @@ module tv80_mcode (/*AUTOARG*/
 			    ALU_Op = 4'b0010;
                           end
                         
-			2  :
+			MCycle[1] :
                           begin
 			    IORQ = 1'b1;
 			    Set_BusB_To = 4'b0110;
 			    Set_Addr_To = aXY;
                           end
                         
-			3  :
+			MCycle[2] :
                           begin
 			    if (IR[3] == 1'b0 ) 
                               begin
@@ -2622,7 +2592,7 @@ module tv80_mcode (/*AUTOARG*/
 			    I_BTR = 1'b1;
                           end // case: 3
                         
-			4  :
+			MCycle[3] :
                           begin
 			    NoRead = 1'b1;
 			    TStates = 3'b101;
@@ -2636,8 +2606,8 @@ module tv80_mcode (/*AUTOARG*/
                     begin
 		      // OUTI, OUTD, OTIR, OTDR
 		      MCycles = 3'b100;
-		      case (MCycle)
-			1  :
+		      case (1'b1) // MCycle
+			MCycle[0] :
                           begin
 			    TStates = 3'b101;
 			    Set_Addr_To = aXY;
@@ -2648,13 +2618,13 @@ module tv80_mcode (/*AUTOARG*/
 			    ALU_Op = 4'b0010;
                           end
                         
-			2  :
+			MCycle[1] :
                           begin
 			    Set_BusB_To = 4'b0110;
 			    Set_Addr_To = aBC;
                           end
                         
-			3  :
+			MCycle[2] :
                           begin
 			    if (IR[3] == 1'b0 ) 
                               begin
@@ -2669,7 +2639,7 @@ module tv80_mcode (/*AUTOARG*/
 			    I_BTR = 1'b1;
                           end // case: 3
                         
-			4  :
+			MCycle[3] :
                           begin
 			    NoRead = 1'b1;
 			    TStates = 3'b101;
@@ -2751,7 +2721,7 @@ module tv80_mcode (/*AUTOARG*/
     end // always @ (IR, ISet, MCycle, F, NMICycle, IntCycle)
   
 // synopsys dc_script_begin
-// set_attribute current_design "revision" "$Id: tv80_mcode.v,v 1.2 2004-09-21 17:32:52 ghutchis Exp $" -type string -quiet
+// set_attribute current_design "revision" "$Id: tv80_mcode.v,v 1.3 2004-09-22 18:07:14 ghutchis Exp $" -type string -quiet
 // synopsys dc_script_end
 endmodule // T80_MCode
 
