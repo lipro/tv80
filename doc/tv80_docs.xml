@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <!DOCTYPE rfc SYSTEM "rfc2629.dtd">
 <?rfc toc="yes"?>
-<?rfc private="$Revision: 1.3 $"?>
+<?rfc private="$Revision: 1.4 $"?>
 <?rfc compact="yes"?>
 <rfc>
 <front>
@@ -99,6 +99,23 @@ which are mapped into I/O space.
         When set, starts a countdown (in clocks) until assertion of
         the INT_N signal.
    </t>
+  </section>
+  <section title="Checksum value (0x91)">
+    <t>This register holds the checksum value of all data
+       written to the accumulate register.  The checksum is a simple
+       twos-complement checksum, so it can be compared with a CPU-generated 
+       checksum.</t>
+    <t>This register is readable and writeable.  Writing the register sets
+       the current checksum value.</t>
+  </section>
+  <section title="Checksum accumulate (0x92)">
+    <t>This write-only register adds the written value to the value
+       contained in the Checksum Value register.</t>
+  </section>
+  <section title="Increment on read (0x93)">
+    <t>This register increments every time it is read, so reading it
+       repeatedly generates an incrementing sequence.  It can be reset
+       by writing it to a new starting value.</t>
   </section>
 
  </section>

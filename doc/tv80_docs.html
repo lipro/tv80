@@ -1,6 +1,6 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
-<html lang="en"><head><title>$Revision: 1.1 $: tv80 Core Documentation</title>
-<meta http-equiv="Expires" content="Fri, 15 Oct 2004 22:04:00 +0000">
+<html lang="en"><head><title>$Revision: 1.2 $: tv80 Core Documentation</title>
+<meta http-equiv="Expires" content="Wed, 03 Nov 2004 21:11:35 +0000">
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
 <meta name="description" content="tv80 Core Documentation">
 <meta name="keywords" content="private, XML, Extensible Markup Language">
@@ -109,9 +109,9 @@
 <body>
 <table summary="layout" cellpadding="0" cellspacing="2" class="bug" align="right"><tr><td class="bug"><a href="#toc" class="link2">&nbsp;TOC&nbsp;</a></td></tr></table>
 <table summary="layout" width="66%" border="0" cellpadding="0" cellspacing="0"><tr><td><table summary="layout" width="100%" border="0" cellpadding="2" cellspacing="1">
-<tr><td class="header">$Revision: 1.1 $</td><td class="header">G. Hutchison</td></tr>
+<tr><td class="header">$Revision: 1.2 $</td><td class="header">G. Hutchison</td></tr>
 <tr><td class="header">&nbsp;</td><td class="header">OpenCores.org</td></tr>
-<tr><td class="header">&nbsp;</td><td class="header">October 15, 2004</td></tr>
+<tr><td class="header">&nbsp;</td><td class="header">October 2004</td></tr>
 </table></td></tr></table>
 <div align="right"><span class="title"><br />tv80 Core Documentation</span></div>
 
@@ -142,9 +142,15 @@ Timeout control (0x82)<br />
 Max timeout (0x84, 0x83)<br />
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="#anchor9">2.2.5</a>&nbsp;
 Interrupt countdown (0x90)<br />
-&nbsp;&nbsp;&nbsp;&nbsp;<a href="#anchor10">2.3</a>&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="#anchor10">2.2.6</a>&nbsp;
+Checksum value (0x91)<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="#anchor11">2.2.7</a>&nbsp;
+Checksum accumulate (0x92)<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="#anchor12">2.2.8</a>&nbsp;
+Increment on read (0x93)<br />
+&nbsp;&nbsp;&nbsp;&nbsp;<a href="#anchor13">2.3</a>&nbsp;
 Tool Chain<br />
-&nbsp;&nbsp;&nbsp;&nbsp;<a href="#anchor11">2.4</a>&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;<a href="#anchor14">2.4</a>&nbsp;
 Tests<br />
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="#tvs80">2.4.1</a>&nbsp;
 tvs80 test<br />
@@ -240,7 +246,28 @@ region, as follows:
         the INT_N signal.
    
 </p>
-<a name="rfc.section.2.3"></a><h4><a name="anchor10">2.3</a>&nbsp;Tool Chain</h4>
+<a name="rfc.section.2.2.6"></a><h4><a name="anchor10">2.2.6</a>&nbsp;Checksum value (0x91)</h4>
+
+<p>This register holds the checksum value of all data
+       written to the accumulate register.  The checksum is a simple
+       twos-complement checksum, so it can be compared with a CPU-generated 
+       checksum.
+</p>
+<p>This register is readable and writeable.  Writing the register sets
+       the current checksum value.
+</p>
+<a name="rfc.section.2.2.7"></a><h4><a name="anchor11">2.2.7</a>&nbsp;Checksum accumulate (0x92)</h4>
+
+<p>This write-only register adds the written value to the value
+       contained in the Checksum Value register.
+</p>
+<a name="rfc.section.2.2.8"></a><h4><a name="anchor12">2.2.8</a>&nbsp;Increment on read (0x93)</h4>
+
+<p>This register increments every time it is read, so reading it
+       repeatedly generates an incrementing sequence.  It can be reset
+       by writing it to a new starting value.
+</p>
+<a name="rfc.section.2.3"></a><h4><a name="anchor13">2.3</a>&nbsp;Tool Chain</h4>
 
 <p>The minimum toolchain required to simulate the tv80 is the
          <a class="info" href="#cver">CVer<span>Vanvick, A., GPL Cver Simulator, .</span></a>[3] Verilog simulator, and the
@@ -250,7 +277,7 @@ region, as follows:
          is required.
      
 </p>
-<a name="rfc.section.2.4"></a><h4><a name="anchor11">2.4</a>&nbsp;Tests</h4>
+<a name="rfc.section.2.4"></a><h4><a name="anchor14">2.4</a>&nbsp;Tests</h4>
 
 <p>Most of the tests in the tv80 environment are written in C, and should
        be compiled with the <a class="info" href="#sdcc">sdcc<span>, Small Device C Compiler, .</span></a>[2] compiler.  
