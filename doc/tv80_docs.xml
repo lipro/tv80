@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <!DOCTYPE rfc SYSTEM "rfc2629.dtd">
 <?rfc toc="yes"?>
-<?rfc private="$Revision: 1.4 $"?>
+<?rfc private="$Revision: 1.5 $"?>
 <?rfc compact="yes"?>
 <rfc>
 <front>
@@ -33,6 +33,71 @@ with the Z80, targetted at embedded and system-on-a-chip designs.
             embedded applications, the tv80 does not attempt to maintain
             the original pinout of the Z80.</t>
     </section>
+
+<section title="Core Area and Technology Mapping">
+   <t> This section tracks synthesis results in various technologies.  LSI 10K technology is
+       used as a baseline because the library ships with Design Compiler.  </t>
+  <figure>
+  <artwork>
+    Component         Clock Speed    Area     Technology (units)
+    ================  ===========  ========  =====================
+      tv80              33 Mhz     10733      lsi_10k (gates)
+      simple_gmii       33 Mhz      1247      lsi_10k (gates)
+  </artwork>
+  </figure>
+    </section>
+
+<section title="TV80 Peripherals">
+  <t>The TV80 design includes a number (one, at this point) of peripherals.  These peripherals
+      are hardware-synthesizable, but may not be fully tested or functional.</t>
+  <section title="Simple GMII Interface">
+    <t>This block presents a GMII interface on one side and a TV80 processor interface on
+        the other.  The processor-side controls are all mapped into I/O-space.  The block
+        can only process a single packet in each direction at one time.  This is only really
+        a limitation on the RX side, where any incoming packets will be dropped until the
+        processor removes the first packet from the RX buffer.</t>
+    <t>The GMII interface is signalling only, and does not support 10/100 operation, half duplex
+        mode, flow control, or any other aspects of 802.3.</t>
+    <section title="Register Interface">
+        <t>This block consumes 3 bits of I/O address space.  The register addresses below are
+            relative to the configurable base address of the block, which must be aligned to an
+            8-byte boundary.  Registers 0x6 and 0x7 are reserved.</t>
+        <section title="Status Register (0x0)">
+            <t>Bit 0 of the status register indicates that a packet is available in the RX buffer.
+                This bit will be cleared when the last byte of data is read out of the RX buffer.</t>
+            <t>Bit 1 is set when the packet in the TX buffer has finished transmitting.  This bit
+                will be cleared when the first byte of data of the next packet is written into the
+                TX buffer.</t>
+            <t>This register is read-only.</t>
+        </section>
+        <section title="Control Register (0x1)">
+            <t>Bit 0 controls sending packets.  When a 1 is written to this bit, the data in
+                the TX buffer will be sent as a single packet.</t>
+           <t>This register is write-only.</t>
+        </section>
+        <section title="RX Length Register (Low, 0x2)">
+            <t>This register contains the low 8 bits of the length of the packet currently
+                residing in the RX buffer.</t>
+            <t>This register is read-only.</t>
+        </section>
+        <section title="RX Length Register (High, 0x3)">
+            <t>This register contains the high 8 bits of the length of the packet currently
+                residing in the RX buffer.</t>
+            <t>This register is read-only.</t>
+        </section>
+        <section title="RX Data Register (0x4)">
+            <t>This register contains the next byte of data in the RX packet buffer.</t>
+            <t>This register is read-only.</t>
+        </section>
+        <section title="TX Data Register (0x5)">
+            <t>Writing to this register puts data in the TX packet buffer.  This register does
+               not perform bounds checking; it is the program's responsibility not to write more
+               data than the size of the TX buffer.</t>
+           <t>This register is write-only.</t>
+        </section>
+    </section>
+  </section>
+</section>
 <section title="Verification Environment">
  <section title="Memory Map">
 <t>

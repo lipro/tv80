@@ -1,6 +1,6 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
-<html lang="en"><head><title>$Revision: 1.2 $: tv80 Core Documentation</title>
-<meta http-equiv="Expires" content="Wed, 03 Nov 2004 21:11:35 +0000">
+<html lang="en"><head><title>$Revision: 1.3 $: tv80 Core Documentation</title>
+<meta http-equiv="Expires" content="Fri, 17 Dec 2004 22:11:11 +0000">
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
 <meta name="description" content="tv80 Core Documentation">
 <meta name="keywords" content="private, XML, Extensible Markup Language">
@@ -109,7 +109,7 @@
 <body>
 <table summary="layout" cellpadding="0" cellspacing="2" class="bug" align="right"><tr><td class="bug"><a href="#toc" class="link2">&nbsp;TOC&nbsp;</a></td></tr></table>
 <table summary="layout" width="66%" border="0" cellpadding="0" cellspacing="0"><tr><td><table summary="layout" width="100%" border="0" cellpadding="2" cellspacing="1">
-<tr><td class="header">$Revision: 1.2 $</td><td class="header">G. Hutchison</td></tr>
+<tr><td class="header">$Revision: 1.3 $</td><td class="header">G. Hutchison</td></tr>
 <tr><td class="header">&nbsp;</td><td class="header">OpenCores.org</td></tr>
 <tr><td class="header">&nbsp;</td><td class="header">October 2004</td></tr>
 </table></td></tr></table>
@@ -127,34 +127,42 @@ with the Z80, targetted at embedded and system-on-a-chip designs.
 <a href="#anchor1">1.</a>&nbsp;
 Background<br />
 <a href="#anchor2">2.</a>&nbsp;
+Core Area and Technology Mapping<br />
+<a href="#anchor3">3.</a>&nbsp;
+TV80 Peripherals<br />
+&nbsp;&nbsp;&nbsp;&nbsp;<a href="#anchor4">3.1</a>&nbsp;
+Simple GMII Interface<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="#anchor5">3.1.1</a>&nbsp;
+Register Interface<br />
+<a href="#anchor12">4.</a>&nbsp;
 Verification Environment<br />
-&nbsp;&nbsp;&nbsp;&nbsp;<a href="#anchor3">2.1</a>&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;<a href="#anchor13">4.1</a>&nbsp;
 Memory Map<br />
-&nbsp;&nbsp;&nbsp;&nbsp;<a href="#anchor4">2.2</a>&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;<a href="#anchor14">4.2</a>&nbsp;
 Control Registers<br />
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="#anchor5">2.2.1</a>&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="#anchor15">4.2.1</a>&nbsp;
 Simulation control (0x80)<br />
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="#anchor6">2.2.2</a>&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="#anchor16">4.2.2</a>&nbsp;
 Message output (0x81)<br />
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="#anchor7">2.2.3</a>&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="#anchor17">4.2.3</a>&nbsp;
 Timeout control (0x82)<br />
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="#anchor8">2.2.4</a>&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="#anchor18">4.2.4</a>&nbsp;
 Max timeout (0x84, 0x83)<br />
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="#anchor9">2.2.5</a>&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="#anchor19">4.2.5</a>&nbsp;
 Interrupt countdown (0x90)<br />
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="#anchor10">2.2.6</a>&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="#anchor20">4.2.6</a>&nbsp;
 Checksum value (0x91)<br />
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="#anchor11">2.2.7</a>&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="#anchor21">4.2.7</a>&nbsp;
 Checksum accumulate (0x92)<br />
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="#anchor12">2.2.8</a>&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="#anchor22">4.2.8</a>&nbsp;
 Increment on read (0x93)<br />
-&nbsp;&nbsp;&nbsp;&nbsp;<a href="#anchor13">2.3</a>&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;<a href="#anchor23">4.3</a>&nbsp;
 Tool Chain<br />
-&nbsp;&nbsp;&nbsp;&nbsp;<a href="#anchor14">2.4</a>&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;<a href="#anchor24">4.4</a>&nbsp;
 Tests<br />
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="#tvs80">2.4.1</a>&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="#tvs80">4.4.1</a>&nbsp;
 tvs80 test<br />
-<a href="#rfc.references1">3.</a>&nbsp;
+<a href="#rfc.references1">5.</a>&nbsp;
 References<br />
 <a href="#rfc.authors">&#167;</a>&nbsp;
 Author's Address<br />
@@ -177,9 +185,92 @@ Author's Address<br />
 </p>
 <a name="anchor2"></a><br /><hr />
 <table summary="layout" cellpadding="0" cellspacing="2" class="bug" align="right"><tr><td class="bug"><a href="#toc" class="link2">&nbsp;TOC&nbsp;</a></td></tr></table>
-<a name="rfc.section.2"></a><h3>2.&nbsp;Verification Environment</h3>
+<a name="rfc.section.2"></a><h3>2.&nbsp;Core Area and Technology Mapping</h3>
 
-<a name="rfc.section.2.1"></a><h4><a name="anchor3">2.1</a>&nbsp;Memory Map</h4>
+<p> This section tracks synthesis results in various technologies.  LSI 10K technology is
+       used as a baseline because the library ships with Design Compiler.  
+</p><pre>
+    Component         Clock Speed    Area     Technology (units)
+    ================  ===========  ========  =====================
+      tv80              33 Mhz     10733      lsi_10k (gates)
+      simple_gmii       33 Mhz      1247      lsi_10k (gates)
+  </pre>
+
+<a name="anchor3"></a><br /><hr />
+<table summary="layout" cellpadding="0" cellspacing="2" class="bug" align="right"><tr><td class="bug"><a href="#toc" class="link2">&nbsp;TOC&nbsp;</a></td></tr></table>
+<a name="rfc.section.3"></a><h3>3.&nbsp;TV80 Peripherals</h3>
+
+<p>The TV80 design includes a number (one, at this point) of peripherals.  These peripherals
+      are hardware-synthesizable, but may not be fully tested or functional.
+</p>
+<a name="rfc.section.3.1"></a><h4><a name="anchor4">3.1</a>&nbsp;Simple GMII Interface</h4>
+
+<p>This block presents a GMII interface on one side and a TV80 processor interface on
+        the other.  The processor-side controls are all mapped into I/O-space.  The block
+        can only process a single packet in each direction at one time.  This is only really
+        a limitation on the RX side, where any incoming packets will be dropped until the
+        processor removes the first packet from the RX buffer.
+</p>
+<p>The GMII interface is signalling only, and does not support 10/100 operation, half duplex
+        mode, flow control, or any other aspects of 802.3.
+</p>
+<a name="rfc.section.3.1.1"></a><h4><a name="anchor5">3.1.1</a>&nbsp;Register Interface</h4>
+
+<p>This block consumes 3 bits of I/O address space.  The register addresses below are
+            relative to the configurable base address of the block, which must be aligned to an
+            8-byte boundary.  Registers 0x6 and 0x7 are reserved.
+</p>
+<a name="rfc.section.3.1.1.1"></a><h4><a name="anchor6">3.1.1.1</a>&nbsp;Status Register (0x0)</h4>
+
+<p>Bit 0 of the status register indicates that a packet is available in the RX buffer.
+                This bit will be cleared when the last byte of data is read out of the RX buffer.
+</p>
+<p>Bit 1 is set when the packet in the TX buffer has finished transmitting.  This bit
+                will be cleared when the first byte of data of the next packet is written into the
+                TX buffer.
+</p>
+<p>This register is read-only.
+</p>
+<a name="rfc.section.3.1.1.2"></a><h4><a name="anchor7">3.1.1.2</a>&nbsp;Control Register (0x1)</h4>
+
+<p>Bit 0 controls sending packets.  When a 1 is written to this bit, the data in
+                the TX buffer will be sent as a single packet.
+</p>
+<p>This register is write-only.
+</p>
+<a name="rfc.section.3.1.1.3"></a><h4><a name="anchor8">3.1.1.3</a>&nbsp;RX Length Register (Low, 0x2)</h4>
+
+<p>This register contains the low 8 bits of the length of the packet currently
+                residing in the RX buffer.
+</p>
+<p>This register is read-only.
+</p>
+<a name="rfc.section.3.1.1.4"></a><h4><a name="anchor9">3.1.1.4</a>&nbsp;RX Length Register (High, 0x3)</h4>
+
+<p>This register contains the high 8 bits of the length of the packet currently
+                residing in the RX buffer.
+</p>
+<p>This register is read-only.
+</p>
+<a name="rfc.section.3.1.1.5"></a><h4><a name="anchor10">3.1.1.5</a>&nbsp;RX Data Register (0x4)</h4>
+
+<p>This register contains the next byte of data in the RX packet buffer.
+</p>
+<p>This register is read-only.
+</p>
+<a name="rfc.section.3.1.1.6"></a><h4><a name="anchor11">3.1.1.6</a>&nbsp;TX Data Register (0x5)</h4>
+
+<p>Writing to this register puts data in the TX packet buffer.  This register does
+               not perform bounds checking; it is the program's responsibility not to write more
+               data than the size of the TX buffer.
+</p>
+<p>This register is write-only.
+</p>
+<a name="anchor12"></a><br /><hr />
+<table summary="layout" cellpadding="0" cellspacing="2" class="bug" align="right"><tr><td class="bug"><a href="#toc" class="link2">&nbsp;TOC&nbsp;</a></td></tr></table>
+<a name="rfc.section.4"></a><h3>4.&nbsp;Verification Environment</h3>
+
+<a name="rfc.section.4.1"></a><h4><a name="anchor13">4.1</a>&nbsp;Memory Map</h4>
 
 <p>
 Environment memory space is divided into a 32k ROM region and a 32k RAM
@@ -202,9 +293,9 @@ region, as follows:
 </pre>
 
 
-<a name="rfc.section.2.2"></a><h4><a name="anchor4">2.2</a>&nbsp;Control Registers</h4>
+<a name="rfc.section.4.2"></a><h4><a name="anchor14">4.2</a>&nbsp;Control Registers</h4>
 
-<a name="rfc.section.2.2.1"></a><h4><a name="anchor5">2.2.1</a>&nbsp;Simulation control (0x80)</h4>
+<a name="rfc.section.4.2.1"></a><h4><a name="anchor15">4.2.1</a>&nbsp;Simulation control (0x80)</h4>
 
 <ul class="text">
 <li>   Write '01' to end simulation with test passed
@@ -216,7 +307,7 @@ region, as follows:
 <li>   Write '04' to turn off dumping
 </li>
 </ul>
-<a name="rfc.section.2.2.2"></a><h4><a name="anchor6">2.2.2</a>&nbsp;Message output (0x81)</h4>
+<a name="rfc.section.4.2.2"></a><h4><a name="anchor16">4.2.2</a>&nbsp;Message output (0x81)</h4>
 
 <p>
         Write characters to this port one at a time.  When the
@@ -224,7 +315,7 @@ region, as follows:
         environment will print out the collected string.
 
 </p>
-<a name="rfc.section.2.2.3"></a><h4><a name="anchor7">2.2.3</a>&nbsp;Timeout control (0x82)</h4>
+<a name="rfc.section.4.2.3"></a><h4><a name="anchor17">4.2.3</a>&nbsp;Timeout control (0x82)</h4>
 
 <p>
         Bit[0] enables the timeout counter,
@@ -232,21 +323,21 @@ region, as follows:
         Timeout counter defaults to enabled at simulation start.
     
 </p>
-<a name="rfc.section.2.2.4"></a><h4><a name="anchor8">2.2.4</a>&nbsp;Max timeout (0x84, 0x83)</h4>
+<a name="rfc.section.4.2.4"></a><h4><a name="anchor18">4.2.4</a>&nbsp;Max timeout (0x84, 0x83)</h4>
 
 <p>
         Holds 16-bit timeout value (amount of time in clocks before
         timeout error occurs).
    
 </p>
-<a name="rfc.section.2.2.5"></a><h4><a name="anchor9">2.2.5</a>&nbsp;Interrupt countdown (0x90)</h4>
+<a name="rfc.section.4.2.5"></a><h4><a name="anchor19">4.2.5</a>&nbsp;Interrupt countdown (0x90)</h4>
 
 <p>
         When set, starts a countdown (in clocks) until assertion of
         the INT_N signal.
    
 </p>
-<a name="rfc.section.2.2.6"></a><h4><a name="anchor10">2.2.6</a>&nbsp;Checksum value (0x91)</h4>
+<a name="rfc.section.4.2.6"></a><h4><a name="anchor20">4.2.6</a>&nbsp;Checksum value (0x91)</h4>
 
 <p>This register holds the checksum value of all data
        written to the accumulate register.  The checksum is a simple
@@ -256,18 +347,18 @@ region, as follows:
 <p>This register is readable and writeable.  Writing the register sets
        the current checksum value.
 </p>
-<a name="rfc.section.2.2.7"></a><h4><a name="anchor11">2.2.7</a>&nbsp;Checksum accumulate (0x92)</h4>
+<a name="rfc.section.4.2.7"></a><h4><a name="anchor21">4.2.7</a>&nbsp;Checksum accumulate (0x92)</h4>
 
 <p>This write-only register adds the written value to the value
        contained in the Checksum Value register.
 </p>
-<a name="rfc.section.2.2.8"></a><h4><a name="anchor12">2.2.8</a>&nbsp;Increment on read (0x93)</h4>
+<a name="rfc.section.4.2.8"></a><h4><a name="anchor22">4.2.8</a>&nbsp;Increment on read (0x93)</h4>
 
 <p>This register increments every time it is read, so reading it
        repeatedly generates an incrementing sequence.  It can be reset
        by writing it to a new starting value.
 </p>
-<a name="rfc.section.2.3"></a><h4><a name="anchor13">2.3</a>&nbsp;Tool Chain</h4>
+<a name="rfc.section.4.3"></a><h4><a name="anchor23">4.3</a>&nbsp;Tool Chain</h4>
 
 <p>The minimum toolchain required to simulate the tv80 is the
          <a class="info" href="#cver">CVer<span>Vanvick, A., GPL Cver Simulator, .</span></a>[3] Verilog simulator, and the
@@ -277,13 +368,13 @@ region, as follows:
          is required.
      
 </p>
-<a name="rfc.section.2.4"></a><h4><a name="anchor14">2.4</a>&nbsp;Tests</h4>
+<a name="rfc.section.4.4"></a><h4><a name="anchor24">4.4</a>&nbsp;Tests</h4>
 
 <p>Most of the tests in the tv80 environment are written in C, and should
        be compiled with the <a class="info" href="#sdcc">sdcc<span>, Small Device C Compiler, .</span></a>[2] compiler.  
    
 </p>
-<a name="rfc.section.2.4.1"></a><h4><a name="tvs80">2.4.1</a>&nbsp;tvs80 test</h4>
+<a name="rfc.section.4.4.1"></a><h4><a name="tvs80">4.4.1</a>&nbsp;tvs80 test</h4>
 
 <p>The tvs80 test is different than the rest of the tests, and is 
          written in its own flavor of assembly language.  This test provides
@@ -296,7 +387,7 @@ region, as follows:
 </p>
 <a name="rfc.references1"></a><br /><hr />
 <table summary="layout" cellpadding="0" cellspacing="2" class="bug" align="right"><tr><td class="bug"><a href="#toc" class="link2">&nbsp;TOC&nbsp;</a></td></tr></table>
-<h3>3&nbsp;References</h3>
+<h3>5&nbsp;References</h3>
 <table width="99%" border="0">
 <tr><td class="author-text" valign="top"><a name="t80">[1]</a></td>
 <td class="author-text">Wallner, D., "<a href="http://www.opencores.org/projects.cgi/web/t80/overview">VHDL T80 Core</a>".</td></tr>
