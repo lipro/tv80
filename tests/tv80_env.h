@@ -11,6 +11,7 @@ sfr at 0x81 msg_port;
 sfr at 0x82 timeout_port;
 sfr at 0x83 max_timeout_low;
 sfr at 0x84 max_timeout_high;
+sfr at 0x90 intr_cntdwn;
 
 #define SC_TEST_PASSED 0x01
 #define SC_TEST_FAILED 0x02
@@ -47,10 +48,7 @@ void print_num (int num)
     msg_port = digits[i-1];
 }
 
-void sim_ctl (unsigned char code)
-{
-  sim_ctl_port = code;
-}
+#define sim_ctl(code) sim_ctl_port = code
 
 void set_timeout (unsigned int max_timeout)
 {
