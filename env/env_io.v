@@ -25,6 +25,8 @@ module env_io (/*AUTOARG*/
   reg [15:0]   max_timeout;
 
   reg [7:0]    int_countdown;
+  reg [7:0]    checksum;
+  reg [7:0]    ior_value;  // increment-on-read value
   
   assign       DI = (!iorq_n & !rd_n & io_cs) ? io_data : {8{1'bz}};
 
@@ -37,7 +39,25 @@ module env_io (/*AUTOARG*/
       timeout_ctl = 1;
       int_countdown = 0;
     end
-  
+
+  always @*
+    begin
+      if (!iorq_n & !rd_n)
+        begin
+          io_cs = (addr[7:5] == 3'b100);
+
+          case (addr)
+	    8'h83 : io_data = max_timeout[7:0];
+	    8'h84 : io_data = max_timeout[15:8];
+
+	    8'h90 : io_data = int_countdown;
+            8'h91 : io_data = checksum;
+            8'h93 : io_data = ior_value;
+            default : io_data = 8'hzz;
+          endcase // case(addr)
+        end // if (!iorq_n & !rd_n)
+    end // always @ *
+          
   always @(posedge clk)
     begin
       if (!iorq_n & !wr_n)
@@ -86,6 +106,9 @@ module env_io (/*AUTOARG*/
 	  8'h84 : max_timeout[15:8] = DO;
 
 	  8'h90 : int_countdown = DO;
+          8'h91 : checksum = DO;
+          8'h92 : checksum = checksum + DO;
+          8'h93 : ior_value = DO;
 	endcase // case(addr)
     end // always @ (posedge clk)
 
