@@ -103,6 +103,7 @@ module tb_top;
   wire       rx_clk, rx_dv, rx_er;
   wire       tx_dv, tx_er;
   wire [7:0] nw_data_out;
+  wire       nwintf_oe;
   
   // loopback config
   assign     rx_data = tx_data;
@@ -110,8 +111,9 @@ module tb_top;
   assign     rx_er = tx_er;
   assign     rx_clk = tx_clk;
 
-  assign     di = (nwintf_sel & !rd_n) ? nw_data_out : 8'bz;
-  
+  assign     di = (nwintf_oe) ? nw_data_out : 8'bz;
+
+`ifdef OLD_INTERFACE
   simple_gmii nwintf
     (
      // Outputs
@@ -132,7 +134,33 @@ module tb_top;
      .wr_n                              (wr_n),
      .io_addr                           (A[2:0]),
      .io_data_in                        (do));
-
+`else // !`ifdef OLD_INTERFACE
+simple_gmii_top nwintf
+    (
+     // unused outputs
+     .int_n                             (),
+     // Outputs
+     .tx_dv                             (tx_dv),
+     .tx_er                             (tx_er),
+     .tx_data                           (tx_data),
+     .tx_clk                            (tx_clk),
+     .rd_data                           (nw_data_out),
+     .doe                               (nwintf_oe),
+     // Inputs
+     .clk                               (clk),
+     .reset                             (!reset_n),
+     .rx_data                           (rx_data),
+     .rx_clk                            (rx_clk),
+     .rx_dv                             (rx_dv),
+     .rx_er                             (rx_er),
+     //.io_select                         (nwintf_sel),
+     .iorq_n                            (iorq_n),
+     .rd_n                              (rd_n),
+     .wr_n                              (wr_n),
+     .addr                              (A[15:0]),
+     .wr_data                           (do));
+`endif // !`ifdef OLD_INTERFACE
+  
   initial
     begin
       clear_ram;
