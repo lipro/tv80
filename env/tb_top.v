@@ -1,5 +1,4 @@
 `define TV80_CORE_PATH tb_top.tv80s_inst.i_tv80_core
-`define TV80_INSTRUCTION_DECODE
 
 module tb_top;
 
@@ -103,6 +102,16 @@ module tb_top;
       repeat (20) @(negedge clk);
       reset_n = 1;
     end
+/*
+  always
+    begin
+      while (mreq_n) @(posedge clk);
+      wait_n <= #1 0;
+      @(posedge clk);
+      wait_n <= #1 1;
+      while (!mreq_n) @(posedge clk);
+    end
+  */
       
 `ifdef TV80_INSTRUCTION_DECODE
   reg [7:0] state;
