@@ -137,7 +137,10 @@ char test_lddr () {
 
 int main ()
 {
-  max_timeout_high = 0xff;
+  if (BUF_SIZE > 255)
+    set_timeout (0xffff);
+  else
+    timeout_port = 0;
   
   // initialize source buffer
   print ("Checking LDI\n");
