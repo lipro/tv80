@@ -22,15 +22,17 @@
 import sys, os, getopt
 
 def print_help ():
-    print "Usage: run [-dh] <testname>"
-    print "  -d : instruction decode"
+    print "Usage: run [-th] [-d ###] <testname>"
+    print "  -t : instruction decode (trace)"
+    print "  -d : enable dumping start at time ###"
     print "  -h : option help (this list)"
     sys.exit(0)
 
 # parse command line options
-# d : instruction trace
+# t : instruction trace
+# d : dump starting at
 # h : help
-(options, args) = getopt.getopt (sys.argv[1:], "dh")
+(options, args) = getopt.getopt (sys.argv[1:], "thd:")
 if len(args) == 0:
     print_help()
 testname = args[0]
@@ -40,9 +42,11 @@ filelist = " -f env/tb.vf"
 testdef  = " +incdir+env -l logs/%s.log +define+DUMPFILE_NAME=\\\"logs/%s.dump\\\" +define+PROGRAM_FILE=\\\"tests/%s.vmem\\\"" % (testname, testname, testname)
 
 for option in options:
-    if option[0] == "-d":
+    if option[0] == "-t":
         print "Adding TV80_INSTRUCTION_DECODE"
         testdef += " +define+TV80_INSTRUCTION_DECODE=1"
+    elif option[0] == "-d":
+        testdef += " +define+DUMP_START=%s" % option[1]
     elif option[0] == "-h":
         print_help()
     else:
