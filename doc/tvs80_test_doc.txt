@@ -30,3 +30,10 @@ for a side-effect in the original Z80, because moving data to the interrupt
 page shouldn't clear the Z flag, but the test is expecting this.
 
 Tests ld_110 through ld_116 all appear to test for the same behavior.
+
+SP Increment/Decrement:
+Tests inc_60 and dec_52 look like they test for the increment and
+decrement instructions decrementing both halves of the SP register;
+i.e. SP = SP - 0101 instead of SP = SP - 0001
+
+Fixed these tests by setting the initial value of SP to +/- 100
