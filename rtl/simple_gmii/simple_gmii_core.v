@@ -42,7 +42,10 @@
 //    [0]     Send TX Packet
 //----------------------------------------------------------------------
 
-module simple_gmii
+module simple_gmii_core
+  #(parameter txbuf_sz = 512,
+    parameter rxbuf_sz = 512,
+    parameter wr_ptr_sz = 10)
   (
    input      clk,
    input      reset,
@@ -58,44 +61,57 @@ module simple_gmii
    output reg       tx_dv,
    output reg       tx_er,
 
-   // TV80 Interface
-   input       io_select,
-   input       rd_n,
-   input       wr_n,
-   input [2:0] io_addr,
-   input [7:0] io_data_in,
-   output reg [7:0] io_data_out
+   // RX Buf RAM
+   output reg         rxbuf_we,
+   output reg [wr_ptr_sz-1:0] rx_wr_ptr, 
+   output reg [wr_ptr_sz-1:0] rx_rd_ptr,
+   input [7:0]  rxbuf_data,
+
+   // TX Buf RAM
+   output reg                 wr_sel_tx_data,
+   output reg [wr_ptr_sz-1:0] txi_wr_ptr,
+   //input [7:0]                io_data_in,
+   output reg [wr_ptr_sz-1:0] txo_xm_ptr,
+   input  [7:0]               txbuf_data,
+
+   // Register interface
+   output [1:0]  status_set,
+   input         start_transmit,   // control[0]
+   output [15:0] rx_len,
+   output [7:0]  rx_rd_data,
+   input         rx_rd_stb,
+   //input [7:0]   tx_wr_data,
+   input         tx_wr_stb,
+   input         en_preamble       // config[0]
   );
   
   //parameter   io_base_addr = 8'hA0;
-  parameter txbuf_sz = 512, rxbuf_sz = 512;
-  parameter wr_ptr_sz = 10;
+  //parameter txbuf_sz = 512, rxbuf_sz = 512;
+  //parameter wr_ptr_sz = 10;
   
   //parameter st_tx_idle = 0, st_tx_xmit = 1;
   parameter st_txi_idle = 1'b0, st_txi_xmit = 1'b1;
-  parameter st_txo_idle = 2'b0, st_txo_xmit = 2'b01, st_txo_wait = 2'b11;
+  parameter st_txo_idle = 2'b0, st_txo_pre = 2'b10, st_txo_xmit = 2'b11, st_txo_wait = 2'b01;
   parameter st_rxo_idle = 2'b00,
             st_rxo_ready = 2'b01,
             st_rxo_ack   = 2'b11;
   
   parameter st_rxin_idle = 2'b00,
-            st_rxin_receive = 2'b01,
-            st_rxin_hold    = 2'b11;
+            st_rxin_pre  = 2'b01,
+            st_rxin_receive = 2'b11,
+            st_rxin_hold    = 2'b10;
+
+  parameter SFD = 8'hD5;
   
   //reg [wr_ptr_sz-1:0] tx_wr_ptr, tx_xm_ptr;
-  reg [wr_ptr_sz-1:0] rx_wr_ptr, rx_rd_ptr, rx_count;
-  //reg [1:0]   tx_state;
+  reg [wr_ptr_sz-1:0] rx_count;
   reg         txi_state;
   reg [1:0]   txo_state;
-  reg         wr_sel_tx_data;
-  reg         wr_sel_tx_control;
-  reg         start_transmit;
-  wire [7:0]  txbuf_data;
   reg        txi_start;
   wire       txo_start;
   reg        txo_done;
   wire       txi_done;
-  reg [wr_ptr_sz-1:0] txi_wr_ptr, txo_wr_ptr, txo_xm_ptr;
+  reg [wr_ptr_sz-1:0] txo_wr_ptr;
   
 
   reg         stat_tx_complete;
@@ -104,13 +120,14 @@ module simple_gmii
 
   reg [1:0]   rxin_state;
   reg         rxin_complete;
+  reg [1:0]   nxt_rxin_state;
+  reg         nxt_rxin_complete;
+  reg [wr_ptr_sz-1:0] nxt_rx_wr_ptr;
   reg         rd_sel_rx_data;
   reg [1:0]   rxo_state;
   wire        rxo_complete;
   reg         rxo_ack;
   wire        rxin_ack;
-  wire [7:0]  rxbuf_data;
-  reg         rxbuf_we;
  
   //assign      io_select = ((io_base_addr >> 3) == addr[7:3]);
 
@@ -118,16 +135,9 @@ module simple_gmii
   // IO Read Mux
   //------------------------------
 
-  always @*
-    begin
-      case (io_addr)
-        0 : io_data_out = { 6'h0, stat_tx_complete, stat_rx_avail };
-        2 : io_data_out = rx_count[7:0];
-        3 : io_data_out = { {16-wr_ptr_sz{1'b0}}, rx_count[wr_ptr_sz-1:8] };
-        4 : io_data_out = rxbuf_data;
-        default : io_data_out = 8'h0;
-      endcase
-    end
+  assign rx_len = { {16-wr_ptr_sz{1'b0}}, rx_count };
+  assign status_set = { stat_tx_complete, stat_rx_avail };
+  assign rx_rd_data = rxbuf_data;
   
   //------------------------------
   // Receive Logic
@@ -135,10 +145,10 @@ module simple_gmii
 
   always @*
     begin
-      rd_sel_rx_data = (io_select & !rd_n & (io_addr == 3'd4));
-      rxbuf_we = ((rxin_state == st_rxin_idle) | (rxin_state == st_rxin_receive)) & rx_dv;
+      rd_sel_rx_data = rx_rd_stb;
+      //rxbuf_we = ((rxin_state == st_rxin_idle) | (rxin_state == st_rxin_receive)) & rx_dv;
     end
-  
+  /*
   ram_1r_1w #(8, rxbuf_sz, wr_ptr_sz) rxbuf
     (.clk     (rx_clk),
      .wr_en   (rxbuf_we),
@@ -147,7 +157,87 @@ module simple_gmii
 
      .rd_addr (rx_rd_ptr),
      .rd_data (rxbuf_data));
+  */
 
+  always @*
+    begin
+      rxbuf_we = 0;
+      nxt_rxin_complete = rxin_complete;
+      nxt_rxin_state = rxin_state;
+      nxt_rx_wr_ptr = rx_wr_ptr;
+      
+      case (rxin_state)
+        st_rxin_idle :
+          begin
+            if (rx_dv)
+              begin
+                nxt_rxin_complete = 0;
+                if (en_preamble & (rx_data != SFD))
+                  nxt_rxin_state = st_rxin_pre;
+                else
+                  begin
+                    nxt_rx_wr_ptr = rx_wr_ptr + 1;
+                    nxt_rxin_state = st_rxin_receive;
+                    rxbuf_we = 1;
+                  end
+              end
+            else
+              begin
+                nxt_rx_wr_ptr = 0;
+              end
+          end // case: st_rxin_idle
+
+        st_rxin_pre :
+          begin
+            if (rx_data == SFD)
+              nxt_rxin_state = st_rxin_receive;
+          end
+        
+        st_rxin_receive :
+          begin
+            if (rx_dv)
+              begin
+                nxt_rx_wr_ptr = rx_wr_ptr + 1;
+                rxbuf_we = 1;
+              end
+            else
+              begin
+                nxt_rxin_state = st_rxin_hold;
+                nxt_rxin_complete = 1;
+              end
+          end
+
+        st_rxin_hold :
+          begin
+            if (rxin_ack & !rx_dv)
+              begin
+                nxt_rxin_state = st_rxin_idle;
+                nxt_rxin_complete = 0;
+              end
+          end
+
+        default :
+          nxt_rxin_state = st_rxin_idle;
+      endcase // case(rxin_state)
+    end // always @ *
+  
+  always @(posedge rx_clk)
+    begin
+      if (reset)
+        begin
+          rxin_state    <= #1 st_rxin_idle;
+          rxin_complete <= #1 0;
+          rx_wr_ptr     <= #1 0;
+        end
+      else
+       begin
+         rxin_state    <= #1 nxt_rxin_state;
+         rxin_complete <= #1 nxt_rxin_complete;
+         rx_wr_ptr     <= #1 nxt_rx_wr_ptr;
+       end // else: !if(reset)
+    end // always @ (posedge rx_clk)
+  
+  /*
   always @(posedge rx_clk)
     begin
       if (reset)
@@ -163,9 +253,14 @@ module simple_gmii
               begin
                 if (rx_dv)
                   begin
-                    rx_wr_ptr <= #1 rx_wr_ptr + 1;
-                    rxin_state <= #1 st_rxin_receive;
                     rxin_complete <= #1 0;
+                    if (en_preamble & (rx_data != SFD))
+                      rxin_state <= #1 st_rxin_pre;
+                    else
+                      begin
+                        rx_wr_ptr <= #1 rx_wr_ptr + 1;
+                        rxin_state <= #1 st_rxin_receive;
+                      end
                   end
                 else
                   begin
@@ -173,6 +268,12 @@ module simple_gmii
                   end
               end // case: st_rxin_idle
 
+            st_rxin_pre :
+              begin
+                if (rx_data == SFD)
+                  rxin_state <= #1 st_rxin_receive;
+              end
+            
             st_rxin_receive :
               begin
                 if (rx_dv)
@@ -198,7 +299,8 @@ module simple_gmii
           endcase // case(rxin_state)
         end // else: !if(reset)
     end // always @ (posedge rx_clk)
-
+*/
+  
   sync2 comp_sync (clk, rxin_complete, rxo_complete);
   sync2 ack_sync  (rx_clk, rxo_ack, rxin_ack);
 
@@ -256,11 +358,10 @@ module simple_gmii
 
   always @*
     begin
-      wr_sel_tx_data = (io_select & !wr_n & (io_addr == 3'd5));
-      wr_sel_tx_control = (io_select & !wr_n & (io_addr == 3'd1));
-      start_transmit    = wr_sel_tx_control & io_data_in[0];
+      wr_sel_tx_data = tx_wr_stb;
     end
 
+  /*
   ram_1r_1w #(8, txbuf_sz, wr_ptr_sz) txbuf
     (.clk     (clk),
      .wr_en   (wr_sel_tx_data),
@@ -269,6 +370,7 @@ module simple_gmii
 
      .rd_addr (txo_xm_ptr),
      .rd_data (txbuf_data));  
+   */
 
   always @(posedge clk)
     begin
@@ -284,6 +386,7 @@ module simple_gmii
           case (txi_state)
             st_txi_idle :
               begin
+                stat_tx_complete <= #1 0;
                 if (start_transmit)
                   begin
                     txi_state <= #1 st_txi_xmit;
@@ -293,7 +396,6 @@ module simple_gmii
                 else if (wr_sel_tx_data)
                   begin
                     txi_wr_ptr <= #1 txi_wr_ptr + 1;
-                    stat_tx_complete <= #1 0;
                   end
               end
 
@@ -341,11 +443,31 @@ module simple_gmii
                 
                 if (txo_start)
                   begin
-                    txo_state <= #1 st_txo_xmit;
+                    if (en_preamble)
+                      txo_state <= #1 st_txo_pre;
+                    else
+                      txo_state <= #1 st_txo_xmit;
                     txo_wr_ptr <= #1 txi_wr_ptr;
                   end
               end
 
+            st_txo_pre :
+              begin
+                tx_er     <= #1 0;
+                tx_dv     <= #1 1;
+                if (txo_xm_ptr == 7)
+                  begin
+                    txo_xm_ptr <= #1 0;
+                    txo_state  <= #1 st_txo_xmit;
+                    tx_data    <= #1 8'hd5;
+                  end
+                else
+                  begin
+                    txo_xm_ptr <= #1 txo_xm_ptr + 1;
+                    tx_data    <= #1 8'h55;
+                  end
+              end
+            
             st_txo_xmit :
               begin
                 if (txo_xm_ptr == txo_wr_ptr)
@@ -381,64 +503,6 @@ module simple_gmii
           endcase // case(tx_state)
         end // else: !if(reset)
     end // always @ (posedge clk)
-  /*
-  always @(posedge clk)
-    begin
-      if (reset)
-        begin
-          tx_state <= #1 st_tx_idle;
-          tx_wr_ptr <= #1 0;
-          tx_xm_ptr <= #1 0;
-          tx_data   <= #1 0;
-          tx_dv     <= #1 0;
-          tx_er     <= #1 0;
-          stat_tx_complete <= #1 0;
-        end
-      else
-        begin
-          case (tx_state)
-            st_tx_idle :
-              begin
-                tx_xm_ptr <= #1 0;
-                tx_dv     <= #1 0;
-                tx_er     <= #1 0;
-                
-                if (start_transmit)
-                  begin
-                    tx_state <= #1 st_tx_xmit;
-                    stat_tx_complete <= #1 0;
-                  end
-                else if (wr_sel_tx_data)
-                  tx_wr_ptr <= #1 tx_wr_ptr + 1;
-              end
-
-            st_tx_xmit :
-              begin
-                if (tx_xm_ptr == tx_wr_ptr)
-                  begin
-                    tx_dv     <= #1 0;
-                    tx_er     <= #1 0;
-                    tx_state  <= #1 st_tx_idle;
-                    tx_wr_ptr <= #1 0;
-                    stat_tx_complete <= #1 1;
-                  end
-                else
-                  begin
-                    tx_data   <= #1 txbuf_data;
-                    tx_dv     <= #1 1;
-                    tx_er     <= #1 0;
-                    tx_xm_ptr <= #1 tx_xm_ptr + 1;
-                  end
-              end
-
-            default :
-              begin
-                tx_state <= #1 st_tx_idle;
-              end
-          endcase // case(tx_state)
-        end // else: !if(reset)
-    end // always @ (posedge clk)
- */            
   
 endmodule
 
