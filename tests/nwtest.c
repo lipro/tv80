@@ -30,11 +30,13 @@
 //    R6  --  Configuration
 //
 sfr at 0x08 nw_status;
-sfr at 0x09 nw_control;
-sfr at 0x0A nw_rx_cnt_low;
-sfr at 0x0B nw_rx_cnt_high;
-sfr at 0x0C nw_rx_data;
-sfr at 0x0D nw_tx_data;
+sfr at 0x09 nw_status_msk;
+sfr at 0x0A nw_control;
+sfr at 0x0B nw_rx_cnt_low;
+sfr at 0x0C nw_rx_cnt_high;
+sfr at 0x0D nw_rx_data;
+sfr at 0x0E nw_tx_data;
+sfr at 0x0F nw_config;
 
 sfr at 0x80 sim_ctl_port;
 sfr at 0x81 msg_port;
@@ -58,11 +60,23 @@ int main ()
 
   int i, rx_count;
 
+  // configure nwintf to use preambles
+  nw_config = 1;
+
   // send packet to buffer and trigger transmit
   for (i=0; i<64; i++)
     nw_tx_data = i;
 
   nw_control = 1;
+
+  // wait for packet to be sent
+  while ((nw_status & 0x02) != 2) ;
+
+  // check and clear the TX status bit
+  //if ((nw_status & 0x02) != 2)
+  //sim_ctl_port = 0x02;
+    //else
+  nw_status = 0x02;
 
   // wait for packet to arrive on loopback
   while ((nw_status & 0x01) != 1)
@@ -84,8 +98,11 @@ int main ()
     inir
   _endasm;
 
+  // clear the RX status bit
+  nw_status = 0x01;
+
   // check the status bit
-  if ((nw_status & 0x01) != 0)
+  if (nw_status != 0)
     sim_ctl_port = 0x02;
 
   // maybe do a checksum here
