@@ -1,3 +1,6 @@
+`define TV80_CORE_PATH tb_top.tv80s_inst.i_tv80_core
+`define TV80_INSTRUCTION_TRACE 1
+
 module tb_top;
 
   reg         clk;
@@ -99,7 +102,24 @@ module tb_top;
       repeat (20) @(negedge clk);
       reset_n = 1;
     end
-      
-`include "env_tasks.v"
+
+`ifdef TV80_INSTRUCTION_TRACE
+  reg [7:0] state;
+  initial
+    state = 0;
+     
+  always @(posedge clk)
+    begin : inst_decode
+      if ((`TV80_CORE_PATH.mcycle[2:0] == 1) && 
+          (`TV80_CORE_PATH.tstate[2:0] == 3))
+        begin
+          op_decode.decode (`TV80_CORE_PATH.IR[7:0], state);
+        end
+      else if (`TV80_CORE_PATH.mcycle[2:0] != 1)
+        state = 0;
+    end
+`endif
+  
+ `include "env_tasks.v"
   
 endmodule // tb_top

@@ -63,9 +63,13 @@ module tv80_reg (/*AUTOARG*/
   // break out ram bits for waveform debug
   wire [7:0] H = RegsH[2];
   wire [7:0] L = RegsL[2];
-  
+  wire [7:0] B = RegsH[0];
+  wire [7:0] C = RegsL[0];
+  wire [7:0] D = RegsH[1];
+  wire [7:0] E = RegsL[1];
+ 
 // synopsys dc_script_begin
-// set_attribute current_design "revision" "$Id: tv80_reg.v,v 1.1 2004-05-16 17:39:57 ghutchis Exp $" -type string -quiet
+// set_attribute current_design "revision" "$Id: tv80_reg.v,v 1.1.2.1 2004-07-30 17:08:04 ghutchis Exp $" -type string -quiet
 // synopsys dc_script_end
 endmodule
 

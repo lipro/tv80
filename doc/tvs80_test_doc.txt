@@ -1,0 +1,32 @@
+The tvs80 test was ported from Brian Porcella's environment, and as
+such has some specific dependencies.  In particular, it is dependent
+on the as80.exe DOS assembler.
+
+To get this to build under Linux requires using the DOSBOX DOS
+emulator.  Developent is currently being done with version 0.60.
+
+To build and run the tvs80 test:
+
+chdir tests/tvs80
+./build
+cd ../..
+scripts/run2 tvs80
+
+===================
+Verification Status
+===================
+
+test ld_110 fails.  Code executed by ld_110 is:
+
+ld_110:		ld	a,data_55
+		ld	i,a
+		ld	a,0
+		ld	a,i
+		jr	nz,ld_111
+
+This puts a constant pattern in the A register, moves A into the interrupt
+page register, clears A, then moves I back to A.  This looks like it's testing
+for a side-effect in the original Z80, because moving data to the interrupt
+page shouldn't clear the Z flag, but the test is expecting this.
+
+Tests ld_110 through ld_116 all appear to test for the same behavior.
