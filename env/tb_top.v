@@ -89,6 +89,8 @@ module tb_top;
 
   initial
     begin
+      //dumpon;
+      clear_ram;
       reset_n = 0;
       wait_n = 1;
       int_n  = 1;

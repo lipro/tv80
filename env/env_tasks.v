@@ -27,3 +27,11 @@ task dumpoff;
     end
 endtask // dumpoff
 
+task clear_ram;
+    integer i;
+    begin
+      for (i=0; i<32768; i=i+1)
+        tb_top.ram.mem[i] = 0;
+    end
+endtask
+
