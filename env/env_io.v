@@ -59,10 +59,16 @@ module env_io (/*AUTOARG*/
           endcase // case(addr)
         end // if (!iorq_n & !rd_n)
     end // always @ *
-          
+
+  wire wr_stb;
+  reg last_iowrite;
+
+  assign wr_stb = (!iorq_n & !wr_n);
+  
   always @(posedge clk)
     begin
-      if (!iorq_n & !wr_n)
+      last_iowrite <= #1 wr_stb;
+      if (!wr_stb & last_iowrite)
 	case (addr)
 	  8'h80 :
 	    begin
