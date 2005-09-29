@@ -62,14 +62,14 @@ void test_byte (unsigned char pattern) {
   // fail if status byte indicates anything other
   // than data ready and transmitter empty
   if (status != 0x61) {
-    print ("Incorrect status byte");
+    print ("Incorrect status byte\n");
     sim_ctl_port = 0x02;
   }
 
   // read the sent byte and fail if it's not what we sent
   data = uart_dm0;
   if (data != pattern) {
-    print ("Data miscompare");
+    print ("Data miscompare\n");
     sim_ctl_port = 0x02;
   }
 }

@@ -38,6 +38,19 @@
 
 void swap_bytes(uint8_t *a, uint8_t *b)
 {
+  /*
+  _asm
+    ld    d,4(ix)
+    ld    e,5(ix)
+    ld    h,6(ix)
+    ld    l,7(ix)
+    ld    a, (de)
+    ld    b, a
+    ld    a, (hl)
+    ld    (de), a
+    ld    (hl), b
+  _endasm;
+  */
 	uint8_t temp;
 
 	temp = *a;
@@ -55,15 +68,42 @@ void rc4_init(struct rc4_state *const state, const uint8_t *key, int keylen)
 	int i;
 
 	/* Initialize state with identity permutation */
+#ifndef ORIGINAL_C
+    _asm
+    ld    d, 4(ix)
+    ld    e, 5(ix)
+    ld    b, #255
+state_init:
+    ld    h, #0
+    ld    l, b
+    add   hl, de
+    ld    (hl), b
+    djnz  state_init
+    ex    de, hl
+    ld    (hl), #0
+    ex    de, hl
+    ld    l, #0
+    ld    h, #1
+    add   hl, de
+    ld    (hl), #0
+    inc   hl
+    ld    (hl), #0
+    _endasm;
+#else
 	for (i = 0; i < 256; i++)
 		state->perm[i] = (uint8_t)i; 
 	state->index1 = 0;
 	state->index2 = 0;
-  
+#endif
+
 	/* Randomize the permutation using key data */
 	for (j = i = 0; i < 256; i++) {
-		j += state->perm[i] + key[i % keylen]; 
-		swap_bytes(&state->perm[i], &state->perm[j]);
+	  uint8_t tmp;
+	  j += state->perm[i] + key[i % keylen];
+	  tmp = state->perm[i];
+	  state->perm[i] = state->perm[j];
+	  state->perm[j] = tmp;
+	  //swap_bytes(&state->perm[i], &state->perm[j]);
 	}
 }
 

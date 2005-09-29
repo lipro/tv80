@@ -25,6 +25,15 @@ C_LINK_OPTIONS=$(SDCC_ROOT)/share/sdcc/lib/z80/crt0.o
 bintr.ihx : bintr.c bintr_crt0.o
 	$(CC) --no-std-crt0 bintr.c bintr_crt0.o
 
+rc4.o : rc4.c
+	$(CC) -c -I. $^
+
+rc4test.o : rc4test.c
+	$(CC) -c -I. $^
+
+rc4test.ihx : rc4test.o rc4.o
+	$(CC) $^
+
 clean :
 	rm -f *.map
 	rm -f *.mem
