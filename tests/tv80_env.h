@@ -59,9 +59,20 @@ void print (char *string)
   }
 }
 
+void print_hex (unsigned int num)
+{
+  char i, digit;
+
+  for (i=3; i>=0; i--) {
+    digit = (num >> (i*4)) & 0xf;
+    if (digit < 10) msg_port = digit + '0';
+    else msg_port = digit + 'a' - 10;
+  }
+}
+
 void print_num (int num)
 {
-  int cd = 0;
+  char cd = 0;
   int i;
   char digits[8];
   char timeout;
@@ -70,6 +81,7 @@ void print_num (int num)
   timeout_port = 0x02;
   timeout_port = timeout;
 
+  if (num == 0) { msg_port = '0'; return; }
   while (num > 0) {
     digits[cd++] = (num % 10) + '0';
     num /= 10;
