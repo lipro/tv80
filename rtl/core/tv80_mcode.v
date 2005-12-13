@@ -24,16 +24,16 @@
 
 module tv80_mcode 
   (/*AUTOARG*/
-   // Outputs
-   MCycles, TStates, Prefix, Inc_PC, Inc_WZ, IncDec_16, Read_To_Reg, 
-   Read_To_Acc, Set_BusA_To, Set_BusB_To, ALU_Op, Save_ALU, PreserveC, 
-   Arith16, Set_Addr_To, IORQ, Jump, JumpE, JumpXY, Call, RstP, LDZ, 
-   LDW, LDSPHL, Special_LD, ExchangeDH, ExchangeRp, ExchangeAF, 
-   ExchangeRS, I_DJNZ, I_CPL, I_CCF, I_SCF, I_RETN, I_BT, I_BC, I_BTR, 
-   I_RLD, I_RRD, I_INRC, SetDI, SetEI, IMode, Halt, NoRead, Write, 
-   // Inputs
-   IR, ISet, MCycle, F, NMICycle, IntCycle
-   );
+  // Outputs
+  MCycles, TStates, Prefix, Inc_PC, Inc_WZ, IncDec_16, Read_To_Reg, 
+  Read_To_Acc, Set_BusA_To, Set_BusB_To, ALU_Op, Save_ALU, PreserveC, 
+  Arith16, Set_Addr_To, IORQ, Jump, JumpE, JumpXY, Call, RstP, LDZ, 
+  LDW, LDSPHL, Special_LD, ExchangeDH, ExchangeRp, ExchangeAF, 
+  ExchangeRS, I_DJNZ, I_CPL, I_CCF, I_SCF, I_RETN, I_BT, I_BC, I_BTR, 
+  I_RLD, I_RRD, I_INRC, SetDI, SetEI, IMode, Halt, NoRead, Write, 
+  // Inputs
+  IR, ISet, MCycle, F, NMICycle, IntCycle
+  );
   
   parameter             Mode   = 0;
   parameter             Flag_C = 0;
@@ -198,7 +198,6 @@ module tv80_mcode
   reg [2:0] DDD;
   reg [2:0] SSS;
   reg [1:0] DPAIR;
-  reg [7:0] IRB;
   
   always @ (/*AUTOSENSE*/F or IR or ISet or IntCycle or MCycle
             or NMICycle)
@@ -206,7 +205,6 @@ module tv80_mcode
       DDD = IR[5:3];
       SSS = IR[2:0];
       DPAIR = IR[5:4];
-      IRB = IR;
 
       MCycles = 3'b001;
       if (MCycle[0] ) 
@@ -272,13 +270,13 @@ module tv80_mcode
             //
             //----------------------------------------------------------------------------
 
-            casex (IRB)
+            casex (IR)
               // 8 BIT LOAD GROUP
               8'b01xxxxxx :
                 begin
-                  if (IRB[5:0] == 6'b110110)
+                  if (IR[5:0] == 6'b110110)
                     Halt = 1'b1;
-                  else if (IRB[2:0] == 3'b110)
+                  else if (IR[2:0] == 3'b110)
                     begin
                       // LD r,(HL)
                       MCycles = 3'b010;
@@ -289,8 +287,8 @@ module tv80_mcode
                           Set_BusA_To[2:0] = DDD;
                           Read_To_Reg = 1'b1;
                         end
-                    end // if (IRB[2:0] == 3'b110)
-                  else if (IRB[5:3] == 3'b110)
+                    end // if (IR[2:0] == 3'b110)
+                  else if (IR[5:3] == 3'b110)
                     begin
                       // LD (HL),r
                       MCycles = 3'b010;
@@ -302,19 +300,19 @@ module tv80_mcode
                         end
                       if (MCycle[1])
                         Write = 1'b1;
-                    end // if (IRB[5:3] == 3'b110)
+                    end // if (IR[5:3] == 3'b110)
                   else
                     begin
                       Set_BusB_To[2:0] = SSS;
                       ExchangeRp = 1'b1;
                       Set_BusA_To[2:0] = DDD;
                       Read_To_Reg = 1'b1;
-                    end // else: !if(IRB[5:3] == 3'b110)
+                    end // else: !if(IR[5:3] == 3'b110)
                 end // case: 8'b01xxxxxx                                    
 
               8'b00xxx110 :
                 begin
-                  if (IRB[5:3] == 3'b110)
+                  if (IR[5:3] == 3'b110)
                     begin
                       // LD (HL),n
                       MCycles = 3'b011;
@@ -327,7 +325,7 @@ module tv80_mcode
                         end
                       if (MCycle[2])
                         Write = 1'b1;
-                    end // if (IRB[5:3] == 3'b110)
+                    end // if (IR[5:3] == 3'b110)
                   else
                     begin
                       // LD r,n
@@ -908,7 +906,7 @@ module tv80_mcode
               
               8'b00xxx100 :
                 begin
-                  if (IRB[5:3] == 3'b110)
+                  if (IR[5:3] == 3'b110)
                     begin
                       // INC (HL)
                       MCycles = 3'b011;
@@ -946,7 +944,7 @@ module tv80_mcode
               
               8'b00xxx101 :
                 begin               
-                  if (IRB[5:3] == 3'b110)
+                  if (IR[5:3] == 3'b110)
                     begin
                       // DEC (HL)
                       MCycles = 3'b011;
@@ -1188,11 +1186,11 @@ module tv80_mcode
                   
                 end // case: 8'b11000011
               
-              8'b11000010,8'b11001010,8'b11010010,8'b11011010,8'b11100010,8'b11101010,8'b11110010,8'b11111010  :
+              8'b11xxx010  :
                 begin
                   if (IR[5] == 1'b1 && Mode == 3 ) 
                     begin
-                      case (IRB[4:3])
+                      case (IR[4:3])
                         2'b00  :
                           begin
                             // LD ($FF00+C),A
@@ -1318,114 +1316,36 @@ module tv80_mcode
                       endcase
                     end // if (Mode != 2 )
                 end // case: 8'b00011000
-              
-              8'b00111000  :
+
+              // Conditional relative jumps (JR [C/NC/Z/NZ], e)
+              8'b001xx000  :
                 begin
                   if (Mode != 2 ) 
                     begin
-                      // JR C,e
-                      MCycles = 3'b011;
+                      MCycles = 3'd3;
                       case (1'b1) // MCycle
                         MCycle[1] :
                           begin
                             Inc_PC = 1'b1;
-                            if (F[Flag_C] == 1'b0 ) 
-                              begin
-                                MCycles = 3'b010;
-                              end
+
+                            case (IR[4:3])
+                              0 : MCycles = (F[Flag_Z]) ? 3'd2 : 3'd3;
+                              1 : MCycles = (!F[Flag_Z]) ? 3'd2 : 3'd3;
+                              2 : MCycles = (F[Flag_C]) ? 3'd2 : 3'd3;
+                              3 : MCycles = (!F[Flag_C]) ? 3'd2 : 3'd3;
+                            endcase
                           end
                         
                         MCycle[2] :
                           begin
                             NoRead = 1'b1;
                             JumpE = 1'b1;
-                            TStates = 3'b101;
+                            TStates = 3'd5;
                           end
                         default :;
                       endcase
                     end // if (Mode != 2 )
-                end // case: 8'b00111000
-              
-              8'b00110000  :
-                begin
-                  if (Mode != 2 ) 
-                    begin
-                      // JR NC,e
-                      MCycles = 3'b011;
-                      case (1'b1) // MCycle
-                        MCycle[1] :
-                          begin
-                            Inc_PC = 1'b1;
-                            if (F[Flag_C] == 1'b1 ) 
-                              begin
-                                MCycles = 3'b010;
-                              end
-                          end
-                        
-                        MCycle[2] :
-                          begin
-                            NoRead = 1'b1;
-                            JumpE = 1'b1;
-                            TStates = 3'b101;
-                          end
-                        default :;
-                      endcase
-                    end // if (Mode != 2 )
-                end // case: 8'b00110000
-              
-              8'b00101000  :
-                begin
-                  if (Mode != 2 ) 
-                    begin
-                      // JR Z,e
-                      MCycles = 3'b011;
-                      case (1'b1) // MCycle
-                        MCycle[1] :
-                          begin
-                            Inc_PC = 1'b1;
-                            if (F[Flag_Z] == 1'b0 ) 
-                              begin
-                                MCycles = 3'b010;
-                              end
-                          end
-                        
-                        MCycle[2] :
-                          begin
-                            NoRead = 1'b1;
-                            JumpE = 1'b1;
-                            TStates = 3'b101;
-                          end
-                        
-                        default :;
-                      endcase
-                    end // if (Mode != 2 )
-                end // case: 8'b00101000
-              
-              8'b00100000  :
-                begin
-                  if (Mode != 2 ) 
-                    begin
-                      // JR NZ,e
-                      MCycles = 3'b011;
-                      case (1'b1) // MCycle
-                        MCycle[1] :
-                          begin
-                            Inc_PC = 1'b1;
-                            if (F[Flag_Z] == 1'b1 ) 
-                              begin
-                                MCycles = 3'b010;
-                              end
-                          end
-                        MCycle[2] :
-                          begin                            
-                            NoRead = 1'b1;
-                            JumpE = 1'b1;
-                            TStates = 3'b101;
-                          end
-                        default :;
-                      endcase
-                    end // if (Mode != 2 )
-                end // case: 8'b00100000
+                end // case: 8'b00111000              
               
               8'b11101001  :
                 // JP (HL)
@@ -1585,7 +1505,7 @@ module tv80_mcode
                 begin                  
                   if (IR[5] == 1'b1 && Mode == 3 ) 
                     begin
-                      case (IRB[4:3])
+                      case (IR[4:3])
                         2'b00  :
                           begin
                             // LD ($FF00+nn),A
@@ -1686,7 +1606,7 @@ module tv80_mcode
                             endcase // case(MCycle)
                           end // case: 2'b11
                         
-                      endcase // case(IRB[4:3])
+                      endcase // case(IR[4:3])
                       
                     end 
                   else 
@@ -1835,7 +1755,7 @@ module tv80_mcode
                     end
                 end
               
-            endcase // case(IRB)
+            endcase // case(IR)
           end // case: 2'b00
         
 
@@ -1852,7 +1772,7 @@ module tv80_mcode
             Set_BusA_To[2:0] = IR[2:0];
             Set_BusB_To[2:0] = IR[2:0];
             
-            case (IRB)
+            case (IR)
               8'b00000000,8'b00000001,8'b00000010,8'b00000011,8'b00000100,8'b00000101,8'b00000111,
               8'b00010000,8'b00010001,8'b00010010,8'b00010011,8'b00010100,8'b00010101,8'b00010111,
               8'b00001000,8'b00001001,8'b00001010,8'b00001011,8'b00001100,8'b00001101,8'b00001111,
@@ -1877,7 +1797,7 @@ module tv80_mcode
                   end
                 end // case: 8'b00000000,8'b00000001,8'b00000010,8'b00000011,8'b00000100,8'b00000101,8'b00000111,...
               
-              8'b00000110,8'b00010110,8'b00001110,8'b00011110,8'b00101110,8'b00111110,8'b00100110,8'b00110110  :
+              8'b00xxx110  :
                 begin
                   // RLC (HL)
                   // RL (HL)
@@ -2019,7 +1939,7 @@ module tv80_mcode
                   endcase // case(MCycle)
                 end // case: 8'b10000110,8'b10001110,8'b10010110,8'b10011110,8'b10100110,8'b10101110,8'b10110110,8'b10111110
               
-            endcase // case(IRB)
+            endcase // case(IR)
           end // case: 2'b01
         
         
@@ -2032,7 +1952,10 @@ module tv80_mcode
             //
             //----------------------------------------------------------------------------
 
-            case (IRB)
+            case (IR)
+	      /*
+	       * Undocumented NOP instructions commented out to reduce size of mcode
+	       *
               8'b00000000,8'b00000001,8'b00000010,8'b00000011,8'b00000100,8'b00000101,8'b00000110,8'b00000111
                 ,8'b00001000,8'b00001001,8'b00001010,8'b00001011,8'b00001100,8'b00001101,8'b00001110,8'b00001111
                   ,8'b00010000,8'b00010001,8'b00010010,8'b00010011,8'b00010100,8'b00010101,8'b00010110,8'b00010111
@@ -2064,6 +1987,8 @@ module tv80_mcode
               8'b01111110,8'b01111111  :
                 // NOP, undocumented
                 ;
+	       */
+	      
               // 8 BIT LOAD GROUP
               8'b01010111  :
                 begin
@@ -2650,7 +2575,7 @@ module tv80_mcode
                   endcase // case(MCycle)
                 end // case: 8'b10100011 , 8'b10101011 , 8'b10110011 , 8'b10111011
               
-            endcase // case(IRB)                  
+            endcase // case(IR)                  
           end // block: default_ed_block        
       endcase // case(ISet)
       
@@ -2690,7 +2615,7 @@ module tv80_mcode
                   Set_BusB_To[2:0] = SSS;
                   Set_BusB_To[3] = 1'b0;
                 end
-              if (IRB == 8'b00110110 || IRB == 8'b11001011 ) 
+              if (IR == 8'b00110110 || IR == 8'b11001011 ) 
                 begin
                   Set_Addr_To = aNone;
                 end
@@ -2707,7 +2632,7 @@ module tv80_mcode
                 end
               Set_BusB_To[2:0] = SSS;
               Set_BusB_To[3] = 1'b0;
-              if (IRB == 8'b00110110 || ISet == 2'b01 ) 
+              if (IR == 8'b00110110 || ISet == 2'b01 ) 
                 begin
                   // LD (HL),n
                   Inc_PC = 1'b1;
@@ -2722,6 +2647,6 @@ module tv80_mcode
     end // always @ (IR, ISet, MCycle, F, NMICycle, IntCycle)
   
   // synopsys dc_script_begin
-  // set_attribute current_design "revision" "$Id: tv80_mcode.v,v 1.5 2004-11-03 00:14:26 ghutchis Exp $" -type string -quiet
+  // set_attribute current_design "revision" "$Id: tv80_mcode.v,v 1.6 2005-12-13 19:17:09 ghutchis Exp $" -type string -quiet
   // synopsys dc_script_end
 endmodule // T80_MCode
