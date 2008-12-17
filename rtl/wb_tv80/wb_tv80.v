@@ -2,7 +2,7 @@
 ////                                                             ////
 //// TV80 to Wishbone Master Interface Wrapper                   ////
 ////                                                             ////
-//// $Id: wb_tv80.v,v 1.1 2008-12-17 07:30:47 hharte Exp $         ////
+//// $Id: wb_tv80.v,v 1.2 2008-12-17 07:46:29 hharte Exp $       ////
 ////                                                             ////
 //// Copyright (C) 2008 Howard M. Harte                          ////
 ////                    hharte@opencores.org                     ////
@@ -77,17 +77,17 @@ module wb_tv80 (nrst_i, clk_i,
 
     assign wbm_adr_o = tv80_adr;
     assign wbm_dat_o = tv80_dat_o;
-    assign wbm_we_o = ~wr_n & (~mreq_n | ~iorq_n);
+    assign wbm_we_o  = ~wr_n & (~mreq_n | ~iorq_n);
     assign wbm_stb_o = (~wr_n | ~rd_n) & (~mreq_n | ~iorq_n | ~m1_n);
     assign wbm_cyc_o = wbm_stb_o;
     assign wbm_tga_o = (~iorq_n ? `TAG_IO : `TAG_MEM);
 
-    assign wait_n = wbm_stb_o == 1'b0 ? 1'b1 : wbm_ack_i;
+    assign wait_n    = wbm_stb_o == 1'b0 ? 1'b1 : wbm_ack_i;
 
     assign tv80_dat_i = wbm_dat_i;   
 
-    assign int_n = ~int_req_i;
-    assign nmi_n = ~nmi_req_i;
+    assign int_n   = ~int_req_i;
+    assign nmi_n   = ~nmi_req_i;
     assign busrq_n = ~busrq_i;
     assign busak_o = ~busak_n;
 
