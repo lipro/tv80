@@ -2,7 +2,7 @@
 // TV80 8-Bit Microprocessor Core
 // Based on the VHDL T80 core by Daniel Wallner (jesus@opencores.org)
 //
-// Copyright (c) 2004 Guy Hutchison (ghutchis@opencores.org)
+// Copyright (c) 2004,2007 Guy Hutchison (ghutchis@opencores.org)
 //
 // Permission is hereby granted, free of charge, to any person obtaining a 
 // copy of this software and associated documentation files (the "Software"), 
@@ -1087,7 +1087,7 @@ module tv80_mcode
                 SetEI = 1'b1;
 
               // 16 BIT ARITHMETIC GROUP
-              8'b00001001,8'b00011001,8'b00101001,8'b00111001  :
+              8'b00xx1001  :
                 begin
                   // ADD HL,ss
                   MCycles = 3'b011;
@@ -1134,7 +1134,7 @@ module tv80_mcode
                   endcase // case(MCycle)
                 end // case: 8'b00001001,8'b00011001,8'b00101001,8'b00111001              
               
-              8'b00000011,8'b00010011,8'b00100011,8'b00110011  :
+              8'b00xx0011 :
                 begin
                   // INC ss
                   TStates = 3'b110;
@@ -1142,7 +1142,7 @@ module tv80_mcode
                   IncDec_16[1:0] = DPAIR;
                 end
               
-              8'b00001011,8'b00011011,8'b00101011,8'b00111011  :
+              8'b00xx1011 :
                 begin
                   // DEC ss
                   TStates = 3'b110;
@@ -1425,7 +1425,7 @@ module tv80_mcode
                   endcase // case(MCycle)
                 end // case: 8'b11001101
               
-              8'b11000100,8'b11001100,8'b11010100,8'b11011100,8'b11100100,8'b11101100,8'b11110100,8'b11111100  :
+              8'b11xxx100  :
                 begin
                   if (IR[5] == 1'b0 || Mode != 3 ) 
                     begin
@@ -1772,7 +1772,7 @@ module tv80_mcode
             Set_BusA_To[2:0] = IR[2:0];
             Set_BusB_To[2:0] = IR[2:0];
             
-            case (IR)
+            casex (IR)
               8'b00000000,8'b00000001,8'b00000010,8'b00000011,8'b00000100,8'b00000101,8'b00000111,
               8'b00010000,8'b00010001,8'b00010010,8'b00010011,8'b00010100,8'b00010101,8'b00010111,
               8'b00001000,8'b00001001,8'b00001010,8'b00001011,8'b00001100,8'b00001101,8'b00001111,
@@ -1952,7 +1952,7 @@ module tv80_mcode
             //
             //----------------------------------------------------------------------------
 
-            case (IR)
+            casex (IR)
 	      /*
 	       * Undocumented NOP instructions commented out to reduce size of mcode
 	       *
@@ -2645,8 +2645,4 @@ module tv80_mcode
         end // if (Mode < 2 )      
       
     end // always @ (IR, ISet, MCycle, F, NMICycle, IntCycle)
-  
-  // synopsys dc_script_begin
-  // set_attribute current_design "revision" "$Id: tv80_mcode.v,v 1.6 2005-12-13 19:17:09 ghutchis Exp $" -type string -quiet
-  // synopsys dc_script_end
 endmodule // T80_MCode
